@@ -465,10 +465,11 @@ function findActivePeriod(timesList) {
   if (todayIdx < 0) return null;
 
   const todayData = timesList[todayIdx];
-  const todayImsak = parseTime(todayData.imsak, todayData.date);
+  const todayGunes = parseTime(todayData.gunes, todayData.date);
   const now = new Date();
 
-  if (now < todayImsak && todayIdx > 0) {
+  // Güneş doğumuna kadar önceki gecenin devamı sayılır (sabah namazı süreci)
+  if (now < todayGunes && todayIdx > 0) {
     return { aksamDay: timesList[todayIdx - 1], imsakDay: todayData };
   }
   const next = timesList[todayIdx + 1];

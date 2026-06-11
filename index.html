@@ -71,7 +71,6 @@
   }
   .date-bar .left { color: var(--accent-soft); font-weight: 500; }
   .date-bar .hijri { color: var(--muted); font-size: 13px; margin-top: 2px; }
-  .date-bar .right { color: var(--muted); text-align: right; }
 
   .featured { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
   @media (max-width: 680px) { .featured { grid-template-columns: 1fr; } }
@@ -153,10 +152,6 @@
         <label for="ilSel">İl</label>
         <select id="ilSel" aria-label="İl seçimi"><option>Yükleniyor…</option></select>
       </div>
-      <div class="ctrl-row">
-        <label for="ilceSel">İlçe</label>
-        <select id="ilceSel" aria-label="İlçe seçimi" disabled><option>—</option></select>
-      </div>
     </div>
 
     <div class="date-bar">
@@ -164,7 +159,6 @@
         <div class="left" id="dateLabel">—</div>
         <div class="hijri" id="hijriLabel"></div>
       </div>
-      <div class="right" id="cityLabel">—</div>
     </div>
 
     <div class="featured">
@@ -308,14 +302,13 @@ async function getIller() {
   return normalized;
 }
 
-async function getIlceler(ilId) {
-  const cached = cacheGet("ilceler." + ilId);
-  if (cached) return cached;
+async function getIlAdindakiIlce(ilId, ilAd) {
   const data = await fetchJSON(`${DIYANET_BASE}/locations/districts?stateId=${ilId}`);
-  data.sort((a, b) => (a.name || "").localeCompare(b.name || "", "tr"));
-  const normalized = data.map(i => ({ IlceID: i._id, IlceAdi: i.name }));
-  cacheSet("ilceler." + ilId, normalized);
-  return normalized;
+  if (!data || data.length === 0) return null;
+  const aranan = (ilAd || "").toLocaleUpperCase("tr").trim();
+  const eslesen = data.find(i => (i.name || "").toLocaleUpperCase("tr").trim() === aranan)
+               || data[0];
+  return { IlceID: eslesen._id, IlceAdi: eslesen.name };
 }
 
 async function getVakitlerDiyanet(ilceId) {
@@ -400,31 +393,6 @@ async function populateIller() {
   }
 }
 
-async function populateIlceler(ilId, preselectIlceId) {
-  const sel = $("ilceSel");
-  sel.disabled = true;
-  clearChildren(sel);
-  sel.appendChild(makeOption("", "Yükleniyor…", undefined, { disabled: true, selected: true }));
-  try {
-    const ilceler = await getIlceler(ilId);
-    clearChildren(sel);
-    const def = makeOption("", "İlçe seçin…", undefined, { disabled: true });
-    sel.appendChild(def);
-    for (const i of ilceler) {
-      sel.appendChild(makeOption(i.IlceID, toTitle(i.IlceAdi), i.IlceAdi));
-    }
-    if (preselectIlceId) {
-      sel.value = preselectIlceId;
-    } else {
-      def.selected = true;
-    }
-    sel.disabled = false;
-  } catch (e) {
-    console.error(e);
-    setStatus("İlçe listesi alınamadı.", true);
-  }
-}
-
 function parseTime(hhmm, baseDate) {
   const [h, m] = hhmm.split(":").map(Number);
   const d = new Date(baseDate);
@@ -501,10 +469,9 @@ function calcDerived(period) {
 }
 
 async function loadAndRender() {
-  if (!state.location) { setStatus("Lütfen il ve ilçe seçin."); return; }
+  if (!state.location) { setStatus("Lütfen il seçin."); return; }
   if (state.location.kind === "diyanet" && !state.location.ilceId) {
-    setStatus("Lütfen ilçe seçin.");
-    return;
+    setStatus("Vakit verisi hazırlanıyor…"); return;
   }
 
   setLoading(true);
@@ -514,10 +481,8 @@ async function loadAndRender() {
     let times;
     if (state.location.kind === "diyanet") {
       times = await getVakitlerDiyanet(state.location.ilceId);
-      $("cityLabel").textContent = `${toTitle(state.location.ilceAd)} / ${toTitle(state.location.ilAd)}`;
     } else {
       times = await getVakitlerGPS(state.location.lat, state.location.lng);
-      $("cityLabel").textContent = state.location.name || "Konumum";
     }
 
     state.times = times;
@@ -634,7 +599,6 @@ setInterval(() => {
 
 async function init() {
   $("ilSel").addEventListener("change", onIlChange);
-  $("ilceSel").addEventListener("change", onIlceChange);
   const offsetInput = document.getElementById("sabahOffset");
   if (offsetInput) {
     offsetInput.addEventListener("input", () => {
@@ -648,16 +612,15 @@ async function init() {
   await populateIller();
 
   const saved = loadSaved();
-  if (saved && saved.kind === "diyanet" && saved.ilId) {
+  if (saved && saved.kind === "diyanet" && saved.ilId && saved.ilceId) {
     state.location = saved;
     $("ilSel").value = saved.ilId;
-    await populateIlceler(saved.ilId, saved.ilceId);
-    if (saved.ilceId) await loadAndRender();
+    await loadAndRender();
   } else if (saved && saved.kind === "gps") {
     state.location = saved;
     await loadAndRender();
   } else {
-    setStatus("İl ve ilçe seçerek başlayın. Bu seçim hatırlanacaktır.");
+    setStatus("İl seçerek başlayın. Bu seçim hatırlanacaktır.");
   }
 }
 
@@ -666,20 +629,16 @@ async function onIlChange(e) {
   const ilId = sel.value;
   if (!ilId) return;
   const ilAd = sel.options[sel.selectedIndex].dataset.ad;
-  state.location = { kind: "diyanet", ilId, ilAd, ilceId: null, ilceAd: null };
-  await populateIlceler(ilId);
-}
-
-async function onIlceChange(e) {
-  const sel = e.target;
-  const ilceId = sel.value;
-  if (!ilceId) return;
-  const ilceAd = sel.options[sel.selectedIndex].dataset.ad;
-  if (!state.location || state.location.kind !== "diyanet") return;
-  state.location.ilceId = ilceId;
-  state.location.ilceAd = ilceAd;
-  saveLocation(state.location);
-  await loadAndRender();
+  setStatus("Vakit verisi alınıyor…");
+  try {
+    const ilce = await getIlAdindakiIlce(ilId, ilAd);
+    if (!ilce) { setStatus("Bu il için veri bulunamadı.", true); return; }
+    state.location = { kind: "diyanet", ilId, ilAd, ilceId: ilce.IlceID, ilceAd: ilce.IlceAdi };
+    saveLocation(state.location);
+    await loadAndRender();
+  } catch (err) {
+    setStatus("Vakit verisi alınamadı: " + (err.message || err), true);
+  }
 }
 
 init();

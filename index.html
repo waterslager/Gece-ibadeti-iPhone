@@ -111,8 +111,7 @@
     background: transparent; border: none; border-radius: 0;
   }
   @media (max-width: 680px) { .secondary { grid-template-columns: repeat(3, 1fr); } }
-  .secondary .item { text-align: center; padding: 10px 6px; border-radius: 10px; transition: background 0.2s ease; }
-  .secondary .item.next { background: rgba(201, 164, 90, 0.10); border: 1px solid rgba(201, 164, 90, 0.3); }
+  .secondary .item { text-align: center; padding: 10px 6px; border-radius: 10px; }
   .secondary .item .nm { font-size: 11px; color: #64b5f6; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 6px; }
   .secondary .item .tm { font-size: 18px; font-weight: 600; color: #ffffff; font-variant-numeric: tabular-nums; }
 
@@ -527,8 +526,6 @@ function render(period) {
     const k = el.dataset.key;
     if (imsakDay[k]) el.textContent = imsakDay[k];
   });
-
-  highlightNext(period);
 }
 
 function getEvents(period) {
@@ -552,15 +549,6 @@ function findNext(events) {
   const now = new Date();
   for (const e of events) if (e.time > now) return e;
   return null;
-}
-
-function highlightNext(period) {
-  const next = findNext(getEvents(period));
-  document.querySelectorAll("#otherTimes .item").forEach(el => el.classList.remove("next"));
-  if (next) {
-    const item = document.querySelector(`#otherTimes .tm[data-key="${next.key}"]`);
-    if (item) item.parentElement.classList.add("next");
-  }
 }
 
 function startCountdown() {
@@ -588,7 +576,6 @@ function tickCountdown() {
     setTimeout(loadAndRender, 2000);
     return;
   }
-  highlightNext(period);
 }
 
 setInterval(() => {

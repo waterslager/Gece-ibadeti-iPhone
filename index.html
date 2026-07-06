@@ -113,21 +113,39 @@
   .secondary .item .nm { font-size: 11px; color: #64b5f6; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 6px; }
   .secondary .item .tm { font-size: 18px; font-weight: 600; color: #ffffff; font-variant-numeric: tabular-nums; }
 
-  /* Sabah offset input */
-  .offset-row {
-    display: flex; align-items: center; gap: 8px; margin-top: 10px;
-    padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.08);
+  /* Sabah saati + dk kutusu aynı satırda */
+  .time-row {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 4px;
   }
-  .offset-row label { font-size: 11px; color: var(--muted); white-space: nowrap; }
-  .offset-row input[type=number] {
-    width: 44px; background: rgba(255,255,255,0.08); border: 1px solid #42a5f5;
-    color: var(--accent-soft); padding: 6px 0 4px; border-radius: 8px; font-size: 14px;
+  .time-row .time { margin-bottom: 0; }
+  .offset-inline { display: flex; align-items: flex-end; gap: 6px; }
+  .offset-inline label { font-size: 10px; color: var(--muted); white-space: nowrap; }
+  .offset-inline input[type=number] {
+    width: 32px; background: rgba(255,255,255,0.08); border: 1px solid #42a5f5;
+    color: #64b5f6; padding: 4px 0 3px; border-radius: 6px; font-size: 12px;
     font-weight: 600; text-align: center; outline: none; font-family: Georgia, serif;
     line-height: 1; appearance: textfield; transition: border-color 0.2s;
   }
-  .offset-row input[type=number]::-webkit-inner-spin-button,
-  .offset-row input[type=number]::-webkit-outer-spin-button { display: none; }
-  .offset-row input[type=number]:focus { border-color: rgba(201,164,90,0.6); }
+  .offset-inline input[type=number]::-webkit-inner-spin-button,
+  .offset-inline input[type=number]::-webkit-outer-spin-button { display: none; }
+  .offset-inline input[type=number]:focus { border-color: rgba(201,164,90,0.6); }
+
+  /* Camide farz namazının kılınma (başlama) saati — sabit, güneşten 30 dk önce.
+     Diğer vakit kartlarındaki saatlerle aynı yerde ve aynı büyüklükte gösterilir. */
+  .cami-block {
+    margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.08);
+  }
+  .cami-block .cami-label {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 2.5px; color: #ffffff;
+    margin-bottom: 6px; font-weight: 600;
+  }
+  .cami-block .cami-time {
+    font-size: 38px; font-weight: 700; color: #00e676; font-variant-numeric: tabular-nums;
+    letter-spacing: 1px; text-shadow: 0 0 18px rgba(0,230,118,0.55), 0 0 4px rgba(0,230,118,0.2);
+  }
+  .cami-block .desc { font-size: 10px; }
+
+
 
   .skeleton {
     background: linear-gradient(90deg, rgba(255,255,255,0.04), rgba(255,255,255,0.10), rgba(255,255,255,0.04));
@@ -180,11 +198,17 @@
       <div class="vakit-card">
         <div class="label">Farz Namaz</div>
         <div class="name">Sabah Namazı</div>
-        <div class="time" id="sabahTime">--:--</div>
-        <div class="desc">Güneşin doğuşundan <span id="sabahDkLabel">60</span> dakika önce başlar   Güneşin doğuşuna kadar</div>
-        <div class="offset-row">
-          <label for="sabahOffset">Güneşten önce (dk):</label>
-          <input type="number" id="sabahOffset" min="1" max="120" value="60" />
+        <div class="time-row">
+          <div class="time" id="sabahTime">--:--</div>
+          <div class="offset-inline">
+            <label for="sabahOffset">Güneşten önce (dk):</label>
+            <input type="number" id="sabahOffset" min="1" max="120" value="60" />
+          </div>
+        </div>
+        <div class="cami-block">
+          <div class="cami-label">Camide Farz Namazı</div>
+          <div class="cami-time" id="camiTime">--:--</div>
+          <div class="desc">(Güneşten 30 dk önce)</div>
         </div>
       </div>
     </div>
@@ -475,7 +499,8 @@ function calcDerived(period) {
   const teheccud = new Date(imsak.getTime() - Math.floor(nightMs / 3));
   const sabahOnce = getSabahOffset();
   const sabah    = new Date(gunes.getTime() - sabahOnce * 60 * 1000);
-  return { teheccud, seher, sabah, imsak, aksam, gunes };
+  const cami     = new Date(gunes.getTime() - 30 * 60 * 1000);
+  return { teheccud, seher, sabah, cami, imsak, aksam, gunes };
 }
 
 async function loadAndRender() {
@@ -514,7 +539,7 @@ async function loadAndRender() {
 }
 
 function setLoading(on) {
-  ["teheccudTime","arasiTime","seherTime","sabahTime"].forEach(id => $(id).classList.toggle("skeleton", on));
+  ["teheccudTime","arasiTime","seherTime","sabahTime","camiTime"].forEach(id => $(id).classList.toggle("skeleton", on));
   document.querySelectorAll("#otherTimes .tm").forEach(el => el.classList.toggle("skeleton", on));
 }
 
@@ -533,6 +558,8 @@ function render(period) {
   $("arasiTime").textContent    = fmt(new Date(arasiMs));
     $("seherTime").textContent    = fmt(d.seher);
     $("sabahTime").textContent    = fmt(d.sabah);
+    const camiEl = document.getElementById("camiTime");
+    if (camiEl) camiEl.textContent = fmt(d.cami);
     const lbl = document.getElementById("sabahDkLabel");
     if (lbl) lbl.textContent = getSabahOffset();
   }

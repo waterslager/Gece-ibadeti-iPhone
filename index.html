@@ -45,6 +45,17 @@
   header .tevhid { font-size: clamp(18px, 3vw, 26px); color: #00ff88; font-family: "Scheherazade New", "Traditional Arabic", serif; line-height: 1.8; margin-bottom: 12px; letter-spacing: 2px; text-shadow: 0 0 20px rgba(0,255,136,0.6), 0 0 6px rgba(0,255,136,0.3); }
   header h1 { font-size: clamp(22px, 3vw, 30px); font-weight: 600; letter-spacing: 0.3px; margin-bottom: 6px; color: #ffffff; }
   header .sub { color: var(--muted); font-size: 13px; line-height: 1.5; }
+  header .couplet {
+    font-family: "Times New Roman", Times, serif; font-size: 13px; line-height: 1.7;
+    margin: 0 auto 10px; font-style: italic; max-width: 480px;
+    background: #000000; border: 1px solid #222222; border-radius: 14px;
+    padding: 14px 18px; color: #00e676; text-shadow: 0 0 12px rgba(0,230,118,0.4);
+  }
+  header .couplet .tr {
+    display: block; margin-top: 10px; font-style: normal; font-size: 12px;
+    background: #121830; border: 1px solid rgba(255,255,255,0.12); border-radius: 12px;
+    padding: 10px 14px; color: #42a5f5;
+  }
 
   .controls {
     display: flex; flex-direction: column; gap: 10px; align-items: stretch;
@@ -145,8 +156,6 @@
   }
   .cami-block .desc { font-size: 10px; }
 
-
-
   .skeleton {
     background: linear-gradient(90deg, rgba(255,255,255,0.04), rgba(255,255,255,0.10), rgba(255,255,255,0.04));
     background-size: 200% 100%; animation: shimmer 1.4s infinite; border-radius: 6px; color: transparent !important;
@@ -158,8 +167,12 @@
   <div class="container">
     <header>
       <div class="tevhid" dir="rtl" lang="ar">لَا إِلَٰهَ إِلَّا اللَّهُ مُحَمَّدٌ رَسُولُ اللَّهِ</div>
+      <div class="couplet">
+        Eyle tevfîkini bu bendene yâ Rab refîk,<br>
+        Kıl inâyet bana kim ente veliyyü'l-tevfîk
+        <span class="tr">Ey Rabbim, tevfikini (başarıya ulaştıran lütfunu) bu kuluna yoldaş eyle; bana inâyetini (lütfunu/yardımını) kıl, çünkü sen tevfikin yegâne sahibisin.</span>
+      </div>
       <h1>Teheccüd · Seher · Sabah Namazı Vakitleri</h1>
-      <div class="sub">Diyanet İşleri Başkanlığı Verisi · Her açılışta otomatik güncellenir</div>
     </header>
 
     <div class="controls">
@@ -206,7 +219,7 @@
           </div>
         </div>
         <div class="cami-block">
-          <div class="cami-label">Camide Farz Namazı</div>
+          <div class="cami-label">Camide Farz Namazı Vakti</div>
           <div class="cami-time" id="camiTime">--:--</div>
           <div class="desc">(Güneşten 30 dk önce)</div>
         </div>
@@ -228,7 +241,8 @@
     <div class="status" id="status">Hazırlanıyor…</div>
 
     <div class="footer">
-      Veri kaynağı: <strong>Diyanet İşleri Başkanlığı</strong> (ezanvakti.imsakiyem.com üzerinden).
+      Veri kaynağı: <strong>Diyanet İşleri Başkanlığı</strong> (ezanvakti.imsakiyem.com üzerinden).<br>
+      Her açılışta otomatik güncellenir
     </div>
   </div>
 

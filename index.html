@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="theme-color" content="#1c2a56">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Teheccüd · Seher · Sabah Namazı Vakitleri</title>
+
+<meta name="description" content="Diyanet İşleri Başkanlığı verilerine dayalı Teheccüd, Seher ve Sabah Namazı vakitleri.">
+<meta name="color-scheme" content="dark">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://ezanvakti.imsakiyem.com https://*.imsakiyem.com;">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="1_192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="1_192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="2_512.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Teheccüd">
+
+<style>
+  :root {
+    --bg-1: #1c2a56;
+    --bg-2: #2a4180;
+    --text: #f4f5fb;
+    --muted: #9aa3c4;
+    --desc-blue: #3f72c9;
+    --label-gray: #9e9e9e;
+    --card-border: rgba(255, 255, 255, 0.08);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    min-height: 100%;
+    background:
+      radial-gradient(1200px 800px at 80% -10%, #35509a 0%, transparent 60%),
+      radial-gradient(800px 600px at -10% 110%, #24356e 0%, transparent 60%),
+      linear-gradient(180deg, var(--bg-1) 0%, var(--bg-2) 60%, var(--bg-1) 100%);
+    color: var(--text);
+    font-family: "Times New Roman", Times, serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    padding: 8px 20px 64px;
+    padding-top: max(8px, env(safe-area-inset-top, 0px));
+    display: flex;
+    justify-content: center;
+    overscroll-behavior-y: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .container { width: 100%; max-width: 900px; display: flex; flex-direction: column; gap: 6px; }
+
+  header { text-align: center; padding: 0; }
+  header .tevhid {
+    font-size: clamp(12px, 2vw, 18px);
+    color: #00ff88;
+    font-family: "Scheherazade New", "Traditional Arabic", serif;
+    line-height: 1.4;
+    letter-spacing: 1.5px;
+    margin-bottom: 6px;
+    text-shadow: 0 0 10px rgba(0,255,136,0.6);
+  }
+  header h1 {
+    font-size: clamp(20px, 2.8vw, 28px);
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    margin-top: 14px;
+    margin-bottom: 6px;
+    color: #ffffff;
+  }
+  header .header-icons {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+    margin: 8px 0 2px;
+  }
+  header .header-icons .hi {
+    font-size: 11px;
+    line-height: 1;
+    filter: drop-shadow(0 0 6px rgba(0,255,136,0.35));
+  }
+
+  .il-card {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 3px 14px;
+    background: #fbd95e;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 12px;
+    font-size: 11px;
+    gap: 6px;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  .il-card .il-label { color: #e11d1d; font-weight: 700; flex-shrink: 0; }
+  .il-card .il-city { color: #000000; font-weight: 700; overflow: hidden; text-overflow: ellipsis; }
+  .il-card select {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    margin: 0;
+    border: none;
+    background: transparent;
+    color: transparent;
+    opacity: 0;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+  }
+
+  .date-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 3px 14px;
+    background: #ff7a00;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 12px;
+    font-size: 11px;
+    gap: 12px;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  .date-bar .left { color: #000000; font-weight: 700; overflow: hidden; text-overflow: ellipsis; }
+  .date-bar .hijri { color: #000000; font-weight: 700; font-size: 11px; flex-shrink: 0; }
+
+  .next-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 3px 14px;
+    background: #22c55e;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 10px;
+    font-size: 11px;
+    gap: 10px;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  .next-bar .next-info { color: #000000; font-weight: 700; overflow: hidden; text-overflow: ellipsis; }
+  .next-bar .next-info #nextTime { font-size: 16px; }
+  .next-bar .next-remain { color: #000000; font-weight: 700; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+  .next-bar .next-remain #nextRemain { font-size: 16px; }
+
+  .featured { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  @media (max-width: 680px) { .featured { grid-template-columns: 1fr; } }
+
+  .vakit-card {
+    background: #000000;
+    border: 1px solid #222222;
+    border-radius: 18px;
+    padding: 15px 18px;
+    position: relative;
+  }
+  .card-icon {
+    position: absolute;
+    top: 11px;
+    right: 15px;
+    font-size: 14px;
+    filter: drop-shadow(0 0 6px rgba(0,230,118,0.5));
+  }
+  .card-icon.kabe-icon {
+    top: 11px;
+    font-size: 21px;
+    filter: grayscale(1) brightness(0.55) contrast(1.3);
+  }
+  .vakit-card .label {
+    font-size: 10px;
+    text-transform: none;
+    letter-spacing: 0.6px;
+    color: #fde047;
+    margin-bottom: 4px;
+    font-weight: 600;
+  }
+  .vakit-card .name {
+    font-size: 16px;
+    font-weight: 600;
+    color: #ff4444;
+    margin-bottom: 3px;
+  }
+  #seherCard .name {
+    color: #00e676;
+    text-shadow: 0 0 12px rgba(0,230,118,0.4);
+  }
+  .vakit-card .time {
+    font-size: 29px;
+    font-weight: 700;
+    color: #64b5f6;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 1px;
+    margin-bottom: 3px;
+  }
+  #seherTime {
+    color: #00e676;
+    text-shadow: 0 0 18px rgba(0,230,118,0.55), 0 0 4px rgba(0,230,118,0.2);
+  }
+  #sabahTime { color: #ff7a00; text-shadow: 0 0 10px rgba(255,122,0,0.5); }
+  #teheccudTime { color: #00bfff; text-shadow: 0 0 10px rgba(0,191,255,0.5); }
+  #arasiTime { color: #00bfff; text-shadow: 0 0 10px rgba(0,191,255,0.5); }
+  .vakit-card .desc {
+    font-size: 9px;
+    color: var(--desc-blue);
+    line-height: 1.4;
+  }
+
+  .status {
+    text-align: center;
+    padding: 12px;
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .status.error {
+    color: #ffb4b4;
+    background: rgba(255, 100, 100, 0.08);
+    border: 1px solid rgba(255, 100, 100, 0.25);
+    border-radius: 10px;
+  }
+  .status.hidden { display: none; }
+
+  .footer {
+    text-align: center;
+    font-size: 10px;
+    color: #8aa3d6;
+    line-height: 1.35;
+    padding: 0 12px;
+  }
+  .footer .org { color: #fde047; font-weight: 500; }
+  .footer .src { color: #64b5f6; font-weight: 700; }
+
+  .vakit-table-card {
+    background: #16224a;
+    border: 1px solid rgba(255,255,255,0.14);
+    border-radius: 20px;
+    overflow: hidden;
+    padding-bottom: 6px;
+    position: relative;
+  }
+  .vakit-table-title { padding: 14px 16px 10px; }
+  .vtt-heading {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1.8px;
+    text-transform: uppercase;
+    color: #ff4444;
+    margin-bottom: 5px;
+  }
+  .vtt-date { font-size: 11px; color: #64b5f6; }
+  .vtt-hijri { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .secondary {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 0;
+    padding: 4px 8px;
+  }
+  @media (max-width: 680px) { .secondary { grid-template-columns: repeat(3, 1fr); } }
+  .secondary .item { text-align: center; padding: 3px 6px; border-radius: 10px; }
+  .secondary .item .nm {
+    font-size: 8px;
+    color: #64b5f6;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 2px;
+  }
+  .secondary .item .tm {
+    font-size: 13px;
+    font-weight: 600;
+    color: #ffffff;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .time-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    flex-wrap: wrap;
+    border: 2px solid #ff7a00;
+    border-radius: 12px;
+    padding: 6px 12px;
+    margin-bottom: 0;
+  }
+  .time-row .time { margin-bottom: 0; }
+  .offset-title-group { display: grid; grid-template-rows: auto auto; gap: 1px; }
+  .offset-title { font-size: 8.5px; line-height: 1.2; margin: 0; padding: 0; color: #fde047; font-weight: 600; white-space: nowrap; }
+  .offset-inline { display: flex; align-items: center; line-height: 1.2; gap: 5px; }
+  .offset-inline label { font-size: 8px; color: var(--desc-blue); white-space: nowrap; }
+  .offset-inline input[type=number] {
+    width: 23.5px;
+    height: 16px;
+    background: #ff7a00;
+    border: none;
+    color: #000000;
+    padding: 0;
+    border-radius: 4px;
+    font-size: 11.5px;
+    font-weight: 900;
+    text-align: center;
+    outline: none;
+    font-family: Georgia, serif;
+    line-height: 1;
+    appearance: textfield;
+    transition: border-color 0.2s;
+  }
+
+  /* Sabah Namazı kartı: kimi'deki gibi tam genişlik, daha ferah kutu */
+  .sabah-card {
+    margin-top: 6px;
+    padding: 18px;
+    border-radius: 20px;
+    --num-size: 29px;
+  }
+  .sabah-card .time-title-group { display: grid; grid-template-rows: auto auto; gap: 1px; }
+  .sabah-card .time-title {
+    font-size: 8.5px;
+    line-height: 1.2;
+    margin: 0;
+    padding: 0;
+    color: #fde047;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .sabah-card .time { font-size: var(--num-size); }
+  .sabah-card .cami-time { font-size: var(--num-size); }
+  .sabah-card .name { margin-bottom: 16px; }
+  .offset-inline input[type=number]::-webkit-inner-spin-button,
+  .offset-inline input[type=number]::-webkit-outer-spin-button { display: none; }
+  .offset-inline input[type=number]:focus { border-color: rgba(201,164,90,0.6); }
+
+  .cami-block {
+    margin-top: 16px;
+    padding-top: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+  }
+  .cami-block .cami-label {
+    font-size: 10px;
+    letter-spacing: 2.2px;
+    color: #00e676;
+    margin-bottom: 4px;
+    font-weight: 600;
+  }
+  .cami-block .cami-time {
+    font-weight: 700;
+    color: #00e676;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 1px;
+    text-shadow: 0 0 18px rgba(0,230,118,0.55), 0 0 4px rgba(0,230,118,0.2);
+  }
+  .cami-block .desc { font-size: 9px; }
+
+  .imsak-gunes-mini { text-align: right; line-height: 1.2; flex-shrink: 0; }
+  .imsak-gunes-mini .mini-block { margin-bottom: 4px; }
+  .imsak-gunes-mini .mini-block:last-child { margin-bottom: 0; }
+  .imsak-gunes-mini .mini-label,
+  .imsak-gunes-mini .mini-time { font-size: 8px; font-weight: 600; }
+  .imsak-gunes-mini .imsak-color { color: #00e676; }
+  .imsak-gunes-mini .gunes-color { color: #ff4444; }
+
+  .skeleton {
+    background: linear-gradient(90deg, rgba(255,255,255,0.04), rgba(255,255,255,0.10), rgba(255,255,255,0.04));
+    background-size: 200% 100%;
+    animation: shimmer 1.4s infinite;
+    border-radius: 6px;
+    color: transparent !important;
+  }
+  @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+</style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="tevhid" dir="rtl" lang="ar">لَا إِلَٰهَ إِلَّا اللَّهُ مُحَمَّدٌ رَسُولُ اللَّهِ</div>
+
+      <div class="header-icons">
+        <span class="hi moon">🌙</span>
+      </div>
+
+      <h1>Teheccüd · Seher · Sabah Namazı Vakitleri</h1>
+    </header>
+
+    <div class="il-card">
+      <span class="il-label">İL</span>
+      <span class="il-city" id="ilCityDisplay">Şehir seçin...</span>
+      <select id="ilSel" aria-label="İl seçimi"><option>Yükleniyor…</option></select>
+    </div>
+
+    <div class="date-bar">
+      <div class="left" id="dateLabel">—</div>
+      <div class="hijri" id="hijriLabel"></div>
+    </div>
+
+    <div class="next-bar" id="nextBar">
+      <span class="next-info"><span id="nextName">—</span> <span id="nextTime">--:--</span></span>
+      <span class="next-remain">Kalan Süre: <span id="nextRemain">--:--:--</span></span>
+    </div>
+
+    <div class="featured">
+      <div class="vakit-card">
+        <div class="card-icon"><img src="data:image/png;base64,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" width="15" height="15" alt="" style="display:block;"></div>
+        <div class="label">Salâtü'l-Leyl</div>
+        <div class="name">Teheccüd Vakti</div>
+        <div class="time" id="teheccudTime">--:--</div>
+        <div class="desc">Gecenin son 1/3'ü — İmsâk'a kadar</div>
+      </div>
+      <div class="vakit-card">
+        <div class="card-icon"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAFjklEQVR42s2XX4hdVxXGf9/e58ydZDJmatrGxjZNTdrYKm3UPAgKmZYiUcSH0gn4UIImTEnSIvUPCKHcjM8WEQTTgdD6oNIM1Ye+iZAJaOtDgpW2KY5pOgTNtKnaRDOZm3vOPp8P99zJTTqT3EIK7pd9zr1rrz/f+tba68ANWrZV77fa/qLtCT6KZVs2uoYDa23/03ay/R3bwXZYTl/2YY1L8nXEAvA2IOAvgOvnDxOhQzeixd+bzQDg2Sfu8uwTd/VGfdX5lbYbtr9842BvEmzk2fHbipPf+uOF2fHbOsauHdlSDi4F19XR32n7h7Y31+/iM2OScNm+dJjKq1dtmJxrNptBwtdCsY90XXEo1vv33Vm/sj3gY8/mAOXJ3d/0wj63/7rzlzayx+KNQHcpEk4Dh4DfSGrbjvaZgfJvs0/TipUUkoTtZSHvwu7lEKjlgqS06ICkVO/HgN0dGMeipFSc2v1w1oj3cqHArm4CYGrZCrku7LVcWhKBXu98ZFsnmjJ9ncFoWqUEG2pjqedMkFTZfhJ4BbgAzEk631u63WfbdwIbgemwlHeLykeP1kbS50iVinZl4G7e3rW+o7DZLVfZvhl4DPgDcBAolqiCLm92AS8Ba8PypESdXDczrE+QDKLIVg80UqXtPVWkGvangPuBBjAClJ14LvNAUlk//hx4GHgvdEi22EbjB9rmGQaQBqncMdhOVGW5x7aYOmE6BoKk/cAk8Oc6ug11WpZCeU7SK5LKUMN9h+1nJCVJVUeqlp6hjd0iCOxQXixTvjp/oD2za6d2TKXjx8azLqGAZ4FvSHpa0kxtrFquTwAE298Ffg08ZftF21+qpeQmQQ9OlIgzZALJFkoXyyoO+McLbz6+YevWyYLp0Vgbe0PS321n16sCSZWbzRCA14HP1zF/EjhRe2dGt4X6xHGyaMCCkNqJmGlN3mj/9tzruz6uB4+WPjaed++Qnlwvyy97LGpiogrAEeB4vb8q6f1F8oze2iGQspcoKtGFLSgU82WKjbBleBW/9+m9m7R1spBUMT0aO9Vx5T3RMdoMPrItk7A0lVpv7btHtkeAVTV0G4DTvXnrKGrGcmb21Www3Fe0UqW6nGxSPpTFqvS/HML+uP72Q9JEecXZA4gDuPfe8D/GV1Yp7a/avllXN5MPwjUWpalUvLX70WxIU+X5VgHKu/9Xlas8D0FDOWkhvYbCL2KMv4Ohk1r/k4VFPe/uXVW0yk/nKX2VAR4r29Wmsh03qluCdYdacuDw4bGoHVOpnNn5YhwZeKT4d6uQLjthY6DKV8RII6P8TxvgNPCOUMv2SsS6ELQuDEb42ADtd1q7G/c8d0j93ZQImuLU3HCimI5DcUtx7lKBlKln2rFdIVWCLBsIkIXLbaqdKMuqyEYG8/JccTDf/PweH9mWhT4v6w4XN06eX5gP29NC9XK+ZkUug+2yRgBJQZAZXLRTVVwsUzFfFMV8ccmGbGQwr+bLn+Wbn9/jw2OR0aMp9D8HHsDNZhi+/9C7sRh6qJovn1EjlvlII8vzoM4IQTIuwQnLgpg3sjy/abDhPMyl/1bfjp967kk3CYxNVRLuMwVeJ+lMhy+iy+hLpx5/IIvFXid/LQZupxFBtcrKlPOFFcMbhPjCQplNDm86eLbLp8Wm1Mc89xXgp8Bh4EeX2+6OIHUU+b0fDBcXzn82uLobpzUoJGAuZvmb3LH2hDRR9VZU3yNa3bP31SPaC/V7vCzTDP2MZj6yLVtuQNX1cm97FfBQ3bJPL9VmbcTUWOCWs2J0FKan4ZZ9gdb75gvjaan+8n+z+iVhrIfMqt+qsb0dOAsUkl7r86vqRnw3Otgetv2nmjv76v+y636Y3CBEDdwH5HXF3Gs77xla+KhRCPW+xfb3bK+41oDyPz+nfL8gDO1MAAAAAElFTkSuQmCC" width="16" height="16" alt="" style="display:block;"></div>
+        <div class="label">Kıyâmü'l-Leyl</div>
+        <div class="name">Teheccüd-Seher Arası</div>
+        <div class="time" id="arasiTime">--:--</div>
+        <div class="desc">Teheccüd ile Seher'in tam ortası</div>
+      </div>
+      <div class="vakit-card" id="seherCard">
+        <div class="card-icon">🌙</div>
+        <div class="label">İstiğfar Duâ Zikir</div>
+        <div class="name">Seher Vakti</div>
+        <div class="time" id="seherTime">--:--</div>
+        <div class="desc">Gecenin son 1/6'sı — İmsâk'a kadar</div>
+      </div>
+    </div>
+
+    <div class="vakit-card sabah-card">
+      <div class="card-icon" style="filter: drop-shadow(0 0 6px rgba(255,120,80,0.5));">🌄</div>
+      <div class="label">Farz Namaz</div>
+      <div class="name">Sabah Namazı</div>
+      <div class="time-row">
+        <div class="time-title-group">
+          <div class="time-title">Uyanma ve hazırlık saati</div>
+          <div class="time" id="sabahTime">--:--</div>
+        </div>
+        <div class="offset-title-group">
+          <div class="offset-title">Süre Ayarla</div>
+          <div class="offset-inline">
+            <label for="sabahOffset">Güneşten önce (dk):</label>
+            <input type="number" id="sabahOffset" min="1" max="120" />
+          </div>
+        </div>
+      </div>
+      <div class="cami-block">
+        <div class="cami-content">
+          <div class="cami-label">Camide Farz Namazı Vakti</div>
+          <div class="cami-time" id="camiTime">--:--</div>
+          <div class="desc">(Güneşten 30 dk önce)</div>
+        </div>
+        <div class="imsak-gunes-mini">
+          <div class="mini-block">
+            <div class="mini-label imsak-color">İmsak</div>
+            <div class="mini-time imsak-color" id="imsakMiniTime">--:--</div>
+          </div>
+          <div class="mini-block">
+            <div class="mini-label gunes-color">Güneş</div>
+            <div class="mini-time gunes-color" id="gunesMiniTime">--:--</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="vakit-table-card">
+      <div class="card-icon kabe-icon">🕋</div>
+      <div class="vakit-table-title">
+        <div class="vtt-heading">📿 <span>Namaz Vakitleri</span></div>
+        <div class="vtt-date" id="vakitTableTitle">—</div>
+        <div class="vtt-hijri" id="vakitTableHijri"></div>
+      </div>
+      <div class="secondary" id="otherTimes">
+        <div class="item"><div class="nm">İmsâk</div><div class="tm" data-key="imsak">--:--</div></div>
+        <div class="item"><div class="nm">Güneş</div><div class="tm" data-key="gunes">--:--</div></div>
+        <div class="item"><div class="nm">Öğle</div><div class="tm" data-key="ogle">--:--</div></div>
+        <div class="item"><div class="nm">İkindi</div><div class="tm" data-key="ikindi">--:--</div></div>
+        <div class="item"><div class="nm">Akşam</div><div class="tm" data-key="aksam">--:--</div></div>
+        <div class="item"><div class="nm">Yatsı</div><div class="tm" data-key="yatsi">--:--</div></div>
+      </div>
+    </div>
+
+    <div class="status hidden" id="status"></div>
+
+    <footer class="footer">
+      Veri kaynağı: <span class="org">Diyanet İşleri Başkanlığı</span><br>
+      (<span class="src">ezanvakti.imsakiyem.com</span>).<br>
+      Her açılışta otomatik güncellenir.
+    </footer>
+  </div>
+
+<script>
+"use strict";
+
+const STORAGE_KEY = "teheccud-seher.location.v2";
+const OFFSET_STORAGE_KEY = "teheccud-seher.sabahOffset.v1";
+const CACHE_PREFIX = "teheccud-seher.cache.";
+
+const $ = (id) => document.getElementById(id);
+const statusEl = $("status");
+const ilCityDisplay = $("ilCityDisplay");
+function updateIlCityDisplay() {
+  const sel = $("ilSel");
+  const opt = sel.options[sel.selectedIndex];
+  ilCityDisplay.textContent = (opt && opt.value) ? opt.textContent : "Şehir seçin...";
+}
+
+let state = {
+  location: null,
+  times: null,
+  countdownTimer: null,
+  requestId: 0
+};
+
+function setStatus(msg, isError) {
+  statusEl.textContent = msg || "";
+  statusEl.classList.toggle("error", !!isError);
+  statusEl.classList.toggle("hidden", !msg);
+}
+
+function pad(n) { return n < 10 ? "0" + n : "" + n; }
+
+function clearChildren(node) {
+  while (node.firstChild) node.removeChild(node.firstChild);
+}
+
+function makeOption(value, label, dataAd, opts) {
+  const o = document.createElement("option");
+  o.value = value;
+  o.textContent = label;
+  if (dataAd !== undefined) o.dataset.ad = dataAd;
+  if (opts) {
+    if (opts.disabled) o.disabled = true;
+    if (opts.selected) o.selected = true;
+  }
+  return o;
+}
+
+function loadSaved() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (e) {}
+  return null;
+}
+
+function saveLocation(loc) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(loc)); } catch (e) {}
+}
+
+function cacheGet(key) {
+  try {
+    const raw = localStorage.getItem(CACHE_PREFIX + key);
+    if (!raw) return null;
+    const obj = JSON.parse(raw);
+    if (Date.now() - obj.ts > 7 * 86400 * 1000) return null;
+    return obj.data;
+  } catch (e) { return null; }
+}
+
+function cacheSet(key, data) {
+  try { localStorage.setItem(CACHE_PREFIX + key, JSON.stringify({ ts: Date.now(), data })); } catch (e) {}
+}
+
+const DIYANET_BASE = "https://ezanvakti.imsakiyem.com/api";
+
+async function fetchJSON(url, timeoutMs = 15000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  let res;
+  try {
+    res = await fetch(url, { cache: "no-store", mode: "cors", credentials: "omit", referrerPolicy: "no-referrer", signal: controller.signal });
+  } catch (e) {
+    if (e.name === "AbortError") throw new Error("Bağlantı zaman aşımına uğradı, tekrar deneyin.");
+    throw new Error("Ağ hatası: " + (e.message || e));
+  } finally {
+    clearTimeout(timer);
+  }
+  if (!res.ok) throw new Error("API hatası: " + res.status);
+  let json;
+  try {
+    json = await res.json();
+  } catch (e) {
+    throw new Error("Sunucudan geçersiz yanıt geldi.");
+  }
+  if (json && typeof json === "object" && "data" in json) {
+    if (json.success === false) throw new Error(json.message || "API başarısız");
+    return json.data;
+  }
+  return json;
+}
+
+async function getIller() {
+  const cached = cacheGet("iller");
+  if (cached) return cached;
+  const data = await fetchJSON(`${DIYANET_BASE}/locations/states?countryId=2`);
+  data.sort((a, b) => (a.name || "").localeCompare(b.name || "", "tr"));
+  const normalized = data.map(s => ({ SehirID: s._id, SehirAdi: s.name }));
+  cacheSet("iller", normalized);
+  return normalized;
+}
+
+async function getIlAdindakiIlce(ilId, ilAd) {
+  const data = await fetchJSON(`${DIYANET_BASE}/locations/districts?stateId=${ilId}`);
+  if (!data || data.length === 0) return null;
+  const aranan = (ilAd || "").toLocaleUpperCase("tr").trim();
+  const eslesen = data.find(i => (i.name || "").toLocaleUpperCase("tr").trim() === aranan)
+               || data[0];
+  return { IlceID: eslesen._id, IlceAdi: eslesen.name };
+}
+
+function getIstanbulParts() {
+  const fmt = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Europe/Istanbul",
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", hour12: false
+  });
+  const parts = fmt.formatToParts(new Date());
+  const get = (t) => parts.find(p => p.type === t).value;
+  return {
+    year: parseInt(get("year"), 10),
+    month: parseInt(get("month"), 10),
+    day: parseInt(get("day"), 10),
+    hour: parseInt(get("hour"), 10) % 24,
+    minute: parseInt(get("minute"), 10)
+  };
+}
+
+function isoDate(d) {
+  return d.getUTCFullYear() + "-" + pad(d.getUTCMonth() + 1) + "-" + pad(d.getUTCDate());
+}
+
+async function getVakitlerDiyanet(ilceId) {
+  const p = getIstanbulParts();
+  const today = new Date(Date.UTC(p.year, p.month - 1, p.day, 12, 0, 0));
+  const start = new Date(today); start.setUTCDate(start.getUTCDate() - 1);
+  const end = new Date(today); end.setUTCDate(end.getUTCDate() + 3);
+  const url = `${DIYANET_BASE}/prayer-times/${encodeURIComponent(ilceId)}/range?startDate=${isoDate(start)}&endDate=${isoDate(end)}`;
+  const data = await fetchJSON(url);
+  return data.map(d => {
+    const t = (d.times && typeof d.times === "object") ? d.times : d;
+    const pick = (a, b) => {
+      const v = t[a] || t[b] || d[a] || d[b] || "";
+      return typeof v === "string" && v.includes(":") ? v.substring(0, 5) : "--:--";
+    };
+
+    let dateObj;
+    const raw = d.date || d.MiladiTarihKisaIso8601 || d.MiladiTarihUzunIso8601 || "";
+    if (/^\d{2}\.\d{2}\.\d{4}$/.test(raw)) {
+      const [dd, mm, yyyy] = raw.split(".").map(Number);
+      dateObj = new Date(yyyy, mm - 1, dd);
+    } else if (/^\d{4}-\d{2}-\d{2}/.test(raw)) {
+      const [yyyy, mm, dd] = raw.substring(0, 10).split("-").map(Number);
+      dateObj = new Date(yyyy, mm - 1, dd);
+    } else {
+      dateObj = new Date();
+    }
+
+    return {
+      date:   new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate()),
+      imsak:  pick("imsak",  "Imsak"),
+      gunes:  pick("gunes",  "Gunes"),
+      ogle:   pick("ogle",   "Ogle"),
+      ikindi: pick("ikindi", "Ikindi"),
+      aksam:  pick("aksam",  "Aksam"),
+      yatsi:  pick("yatsi",  "Yatsi"),
+      hijri:  d.HicriTarihUzun || (d.hijri_date && d.hijri_date.full_date) || d.hijriDate || ""
+    };
+  });
+}
+
+function toTitle(s) {
+  if (!s) return s;
+  return s.toLocaleLowerCase("tr").replace(/(^|[ \-'])([a-zçğıöşüâî])/gu, (_, p1, p2) => p1 + p2.toLocaleUpperCase("tr"));
+}
+
+async function populateIller() {
+  const sel = $("ilSel");
+  clearChildren(sel);
+  try {
+    const iller = await getIller();
+    sel.appendChild(makeOption("", "İl seçin…", undefined, { disabled: true, selected: true }));
+    for (const il of iller) {
+      sel.appendChild(makeOption(il.SehirID, toTitle(il.SehirAdi), il.SehirAdi));
+    }
+    sel.disabled = false;
+  } catch (e) {
+    sel.appendChild(makeOption("", "Yüklenemedi — sayfayı yenile", undefined, { disabled: true, selected: true }));
+    setStatus("İl listesi alınamadı: " + (e.message || "Bağlantı hatası") + " — Sayfayı yenileyip tekrar deneyin.", true);
+  }
+}
+
+// Türkiye 2016'dan beri yaz saati uygulamadığı için sabit UTC+3 (TRT).
+// Diyanet API saatlerini doğrudan UTC olarak kaydedip fmt() içinde
+// "Europe/Istanbul" ile tekrar formatlıyoruz. NOT: Türkiye ileride yaz
+// saatine dönerse ya da API formatı değişirse bu offset gözden geçirilmeli.
+const TR_UTC_OFFSET_HOURS = 3;
+function parseTime(hhmm, baseDate) {
+  const [h, m] = hhmm.split(":").map(Number);
+  return new Date(Date.UTC(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate(), h - TR_UTC_OFFSET_HOURS, m, 0, 0));
+}
+
+const TR_MONTHS = ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
+const TR_DAYS   = ["Pazar","Pazartesi","Salı","Çarşamba","Perşembe","Cuma","Cumartesi"];
+function formatDate(d) { return `${d.getDate()} ${TR_MONTHS[d.getMonth()]} ${d.getFullYear()}, ${TR_DAYS[d.getDay()]}`; }
+
+function getSabahOffset() {
+  const el = document.getElementById("sabahOffset");
+  const v = el ? parseInt(el.value, 10) : NaN;
+  // Kutu boş veya 0 ise null döner: bu durumda sabah vakti İmsak'a eşitlenir (aşağıda calcDerived).
+  return (!isNaN(v) && v > 0) ? v : null;
+}
+
+function findActivePeriod(timesList) {
+  const p = getIstanbulParts();
+  let todayIdx = -1;
+  for (let i = 0; i < timesList.length; i++) {
+    const d = timesList[i].date;
+    if (d.getFullYear() === p.year && d.getMonth() === p.month - 1 && d.getDate() === p.day) {
+      todayIdx = i; break;
+    }
+  }
+  if (todayIdx < 0) return null;
+
+  const todayData = timesList[todayIdx];
+  const todayGunes = parseTime(todayData.gunes, todayData.date);
+  const now = new Date();
+
+  if (now < todayGunes && todayIdx > 0) {
+    return { aksamDay: timesList[todayIdx - 1], imsakDay: todayData };
+  }
+  const next = timesList[todayIdx + 1];
+  if (next) return { aksamDay: todayData, imsakDay: next };
+  return { aksamDay: timesList[todayIdx - 1] || todayData, imsakDay: todayData };
+}
+
+function ceilMin(d) {
+  if (!d) return d;
+  const s = d.getUTCSeconds();
+  return s === 0 ? d : new Date(d.getTime() + (60 - s) * 1000);
+}
+
+const TR_TIME_FMT = new Intl.DateTimeFormat("en-GB", {
+  timeZone: "Europe/Istanbul",
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false
+});
+
+function fmt(d) {
+  if (!d) return "--:--";
+  const c = ceilMin(d);
+  const parts = TR_TIME_FMT.formatToParts(c);
+  const hh = parts.find(p => p.type === "hour").value;
+  const mm = parts.find(p => p.type === "minute").value;
+  return hh + ":" + mm;
+}
+
+function calcDerived(period) {
+  if (!period || !period.aksamDay || !period.imsakDay) return null;
+  const aksam = parseTime(period.aksamDay.aksam, period.aksamDay.date);
+  const imsak = parseTime(period.imsakDay.imsak, period.imsakDay.date);
+  const gunes = parseTime(period.imsakDay.gunes, period.imsakDay.date);
+  const nightMs = imsak - aksam;
+  if (nightMs <= 0) return null;
+  const seher    = new Date(imsak.getTime() - Math.floor(nightMs / 6));
+  const teheccud = new Date(imsak.getTime() - Math.floor(nightMs / 3));
+  const sabahOnce = getSabahOffset();
+  const sabah    = sabahOnce ? new Date(gunes.getTime() - sabahOnce * 60 * 1000) : imsak;
+  const cami     = new Date(gunes.getTime() - 30 * 60 * 1000);
+  return { teheccud, seher, sabah, cami, imsak, aksam, gunes };
+}
+
+async function loadAndRender(retryAttempt = 0) {
+  if (!state.location) { setStatus("Lütfen il seçin."); return; }
+  if (!state.location.ilceId) {
+    setStatus("Vakit verisi hazırlanıyor…"); return;
+  }
+
+  const myRequestId = ++state.requestId;
+
+  setLoading(true);
+  if (retryAttempt === 0) setStatus("Vakitler çekiliyor…");
+
+  try {
+    const times = await getVakitlerDiyanet(state.location.ilceId);
+
+    if (myRequestId !== state.requestId) return; // bu sırada daha yeni bir istek başladı, bu sonucu yoksay
+
+    state.times = times;
+    const period = findActivePeriod(times);
+    if (!period) throw new Error("Bugün için veri bulunamadı.");
+
+    render(period);
+    setStatus("");
+    startCountdown();
+    retryCount = 0;
+  } catch (e) {
+    if (myRequestId !== state.requestId) return; // eskimiş isteğin hatası, yoksay
+    console.error(e);
+
+    const msg = String((e && e.message) || e);
+    const isTransient = /Ağ hatası|zaman aşımı|Failed to fetch/i.test(msg);
+
+    if (isTransient && retryAttempt < 3) {
+      const waitSec = [2, 4, 8][retryAttempt];
+      setStatus(waitSec + " sn sonra tekrar denenecek…", true);
+      setTimeout(() => {
+        if (myRequestId === state.requestId) loadAndRender(retryAttempt + 1);
+      }, waitSec * 1000);
+      return;
+    }
+
+    if (isTransient) {
+      setStatus(
+        "Vakitler alınamadı. İnternet bağlantınızı kontrol edin; " +
+        "bazı işyeri/kurumsal ağlar bu veri kaynağına erişimi " +
+        "engelleyebilir. Mobil veri ile tekrar deneyin.",
+        true
+      );
+    } else {
+      setStatus("Vakitler alınamadı: " + msg, true);
+    }
+    setLoading(false);
+  }
+}
+
+function setLoading(on) {
+  ["teheccudTime","arasiTime","seherTime","sabahTime","camiTime","imsakMiniTime","gunesMiniTime"].forEach(id => $(id).classList.toggle("skeleton", on));
+  document.querySelectorAll("#otherTimes .tm").forEach(el => el.classList.toggle("skeleton", on));
+}
+
+function render(period) {
+  setLoading(false);
+  lastRenderedImsakDate = period.imsakDay.date.getTime();
+  const { imsakDay } = period;
+  $("dateLabel").textContent = formatDate(imsakDay.date);
+  $("hijriLabel").textContent = imsakDay.hijri ? "Hicrî: " + imsakDay.hijri : "";
+  const titleEl = document.getElementById("vakitTableTitle");
+  if (titleEl) titleEl.textContent = formatDate(imsakDay.date);
+  const hijriTitleEl = document.getElementById("vakitTableHijri");
+  if (hijriTitleEl) hijriTitleEl.textContent = imsakDay.hijri ? "Hicrî: " + imsakDay.hijri : "";
+
+  const d = calcDerived(period);
+  if (d) {
+    $("teheccudTime").textContent = fmt(d.teheccud);
+    const arasiMs = d.teheccud.getTime() + (d.seher.getTime() - d.teheccud.getTime()) / 2;
+    $("arasiTime").textContent    = fmt(new Date(arasiMs));
+    $("seherTime").textContent    = fmt(d.seher);
+    $("sabahTime").textContent    = fmt(d.sabah);
+    const camiEl = document.getElementById("camiTime");
+    if (camiEl) camiEl.textContent = fmt(d.cami);
+    const imsakMiniEl = document.getElementById("imsakMiniTime");
+    if (imsakMiniEl) imsakMiniEl.textContent = fmt(d.imsak);
+    const gunesMiniEl = document.getElementById("gunesMiniTime");
+    if (gunesMiniEl) gunesMiniEl.textContent = fmt(d.gunes);
+  }
+
+  document.querySelectorAll("#otherTimes .tm").forEach(el => {
+    const k = el.dataset.key;
+    if (imsakDay[k]) el.textContent = imsakDay[k];
+  });
+}
+
+function getEvents() {
+  if (!state.times || !state.times.length) return [];
+  const p = getIstanbulParts();
+  let todayIdx = -1;
+  for (let i = 0; i < state.times.length; i++) {
+    const d = state.times[i].date;
+    if (d.getFullYear() === p.year && d.getMonth() === p.month - 1 && d.getDate() === p.day) {
+      todayIdx = i; break;
+    }
+  }
+  if (todayIdx < 0) return [];
+  const today = state.times[todayIdx];
+  const list = [
+    { key: "sabah",  name: "Sabah Namazı", time: parseTime(today.imsak,   today.date) },
+    { key: "ogle",   name: "Öğle",         time: parseTime(today.ogle,    today.date) },
+    { key: "ikindi", name: "İkindi",       time: parseTime(today.ikindi,  today.date) },
+    { key: "aksam",  name: "Akşam",        time: parseTime(today.aksam,   today.date) },
+    { key: "yatsi",  name: "Yatsı",        time: parseTime(today.yatsi,   today.date) }
+  ];
+  const tomorrow = state.times[todayIdx + 1];
+  if (tomorrow) {
+    list.push({ key: "sabah", name: "Sabah Namazı", time: parseTime(tomorrow.imsak, tomorrow.date) });
+  }
+  return list;
+}
+
+function findNext(events) {
+  const now = new Date();
+  for (const e of events) if (e.time > now) return e;
+  return null;
+}
+
+// Pahalı tarama (findActivePeriod + getEvents) her saniye değil,
+// yalnızca dakikada bir veya sıradaki vakit geçtiğinde çalışır.
+let cachedNextEvent = null;
+let lastScanAt = 0;
+
+function startCountdown() {
+  if (state.countdownTimer) clearInterval(state.countdownTimer);
+  // Yeni veri (örn. şehir değişikliği) geldiğinde önbelleği sıfırla,
+  // aksi halde eski şehrin geri sayımı bir süre görünmeye devam edebilir.
+  cachedNextEvent = null;
+  lastScanAt = 0;
+  tickCountdown();
+  state.countdownTimer = setInterval(tickCountdown, 1000);
+}
+
+let lastRenderedImsakDate = null;
+let retryPending = false;
+let retryCount = 0;
+const RETRY_BASE_MS = 5000;
+const RETRY_MAX_MS = 60000;
+
+function formatRemain(ms) {
+  if (ms < 0) ms = 0;
+  const totalSec = Math.floor(ms / 1000);
+  const hh = Math.floor(totalSec / 3600);
+  const mm = Math.floor((totalSec % 3600) / 60);
+  const ss = totalSec % 60;
+  return pad(hh) + ":" + pad(mm) + ":" + pad(ss);
+}
+
+function updateNextBar(next) {
+  const nameEl = document.getElementById("nextName");
+  const timeEl = document.getElementById("nextTime");
+  const remainEl = document.getElementById("nextRemain");
+  if (!nameEl || !timeEl || !remainEl) return;
+  nameEl.textContent = next.name;
+  timeEl.textContent = fmt(next.time);
+  remainEl.textContent = formatRemain(next.time.getTime() - Date.now());
+}
+
+function tickCountdown() {
+  if (!state.times) return;
+  const now = Date.now();
+  const needsScan = !cachedNextEvent
+    || now >= cachedNextEvent.time.getTime()
+    || (now - lastScanAt) >= 60000;
+
+  if (needsScan) {
+    lastScanAt = now;
+    const period = findActivePeriod(state.times);
+    if (!period) return;
+
+    if (lastRenderedImsakDate !== period.imsakDay.date.getTime()) {
+      lastRenderedImsakDate = period.imsakDay.date.getTime();
+      render(period);
+    }
+
+    const events = getEvents();
+    cachedNextEvent = findNext(events);
+
+    if (!cachedNextEvent) {
+      if (!retryPending) {
+        retryPending = true;
+        const delay = Math.min(RETRY_BASE_MS * Math.pow(2, retryCount), RETRY_MAX_MS);
+        retryCount++;
+        setTimeout(() => { retryPending = false; loadAndRender(); }, delay);
+      }
+      return;
+    }
+  }
+
+  updateNextBar(cachedNextEvent);
+}
+
+setInterval(() => {
+  if (!state.times) return;
+  const period = findActivePeriod(state.times);
+  if (!period) loadAndRender();
+}, 60000);
+
+async function init() {
+  $("ilSel").addEventListener("change", updateIlCityDisplay);
+  $("ilSel").addEventListener("change", onIlChange);
+  const offsetInput = document.getElementById("sabahOffset");
+  if (offsetInput) {
+    try {
+      const savedOffset = localStorage.getItem(OFFSET_STORAGE_KEY);
+      if (savedOffset !== null) offsetInput.value = savedOffset;
+    } catch (e) {}
+
+    offsetInput.addEventListener("input", () => {
+      try { localStorage.setItem(OFFSET_STORAGE_KEY, offsetInput.value); } catch (e) {}
+      if (state.times) {
+        const period = findActivePeriod(state.times);
+        if (period) render(period);
+      }
+    });
+  }
+
+  await populateIller();
+
+  const saved = loadSaved();
+  if (saved && saved.ilId && saved.ilceId) {
+    state.location = saved;
+    $("ilSel").value = saved.ilId;
+    updateIlCityDisplay();
+    await loadAndRender();
+  } else {
+    setStatus("İl seçerek başlayın. Bu seçim hatırlanacaktır.");
+  }
+}
+
+async function onIlChange(e) {
+  const sel = e.target;
+  const ilId = sel.value;
+  if (!ilId) return;
+  const ilAd = sel.options[sel.selectedIndex].dataset.ad;
+  setStatus("Vakit verisi alınıyor…");
+  try {
+    const ilce = await getIlAdindakiIlce(ilId, ilAd);
+    if (!ilce) { setStatus("Bu il için veri bulunamadı.", true); return; }
+    state.location = { ilId, ilAd, ilceId: ilce.IlceID, ilceAd: ilce.IlceAdi };
+    saveLocation(state.location);
+    await loadAndRender();
+  } catch (err) {
+    setStatus("Vakit verisi alınamadı: " + (err.message || err), true);
+  }
+}
+
+init();
+
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("sw.js", { updateViaCache: "none" })
+    .catch((err) => console.warn("[SW] Kayıt başarısız:", err));
+}
+</script>
+</body>
+</html>

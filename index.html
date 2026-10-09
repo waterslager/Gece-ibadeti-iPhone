@@ -853,6 +853,17 @@ function applyOffsetLimit(period) {
     }
   }
 }
+// Kutuya sınırı aşan değer yazılınca (değer sınıra iner) mevcut durum satırında kısa bir
+// bilgi gösterilir; dokunmatik ekranda title ipucu çıkmadığı için bu geri bildirim gerekli.
+// Başka bir durum mesajı (hata/çevrimdışı) varsa üzerine yazılmaz; 4 sn sonra kendiliğinden kalkar.
+function showOffsetLimitNote() {
+  if (!offsetDayMax) return;
+  const el = document.getElementById("status");
+  if (!el || el.textContent.trim()) return;
+  const msg = "Bugün için en fazla " + offsetDayMax + " dk girilebilir (imsak vaktine kadar).";
+  setStatus(msg, false);
+  setTimeout(() => { if (el.textContent === msg) setStatus(""); }, 4000);
+}
 function getSabahOffset() {
   const el = document.getElementById("sabahOffset");
   const v = el ? parseInt(el.value, 10) : NaN;
@@ -1305,7 +1316,7 @@ async function init() {
       if (clampOffsetInput(offsetInput, true)) offsetInput.dispatchEvent(new Event("input"));
     });
     offsetInput.addEventListener("input", () => {
-      clampOffsetInput(offsetInput); // sınırı aşan değer kutuda da düzeltilir (saklanmadan önce)
+      if (clampOffsetInput(offsetInput)) showOffsetLimitNote(); // sınırı aşan değer kutuda da düzeltilir (saklanmadan önce)
       try { localStorage.setItem(OFFSET_STORAGE_KEY, offsetInput.value); } catch (e) { console.warn("[storage] yazılamadı:", e); }
       if (state.times) {
         const period = findActivePeriod(state.times);

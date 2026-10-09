@@ -458,7 +458,7 @@
           <div class="offset-title">Süre Ayarla</div>
           <div class="offset-inline">
             <label for="sabahOffset">Güneşten önce (dk):</label>
-            <input type="number" id="sabahOffset" min="1" max="120" inputmode="numeric" />
+            <input type="number" id="sabahOffset" min="1" inputmode="numeric" />
           </div>
         </div>
       </div>
@@ -820,15 +820,45 @@ function formatDate(d) { return `${d.getUTCDate()} ${TR_MONTHS[d.getUTCMonth()]}
 
 // #3: HTML'deki min/max nitelikleri sadece tarayıcı form doğrulaması içindir;
 // kullanıcı klavyeden aralık dışı bir değer (örn. 99999) yazabildiğinden JS
-// tarafında da clamp uygulanıyor. MAX=120, HTML'deki <input max="120"> ile uyumlu.
+// tarafında da clamp uygulanıyor. Üst sınır günlüktür (getOffsetMax); HTML max değeri JS ile güncellenir.
 const SABAH_OFFSET_MIN = 1;
-const SABAH_OFFSET_MAX = 120;
+// Günlük sınır: sabah saati imsaktan önceye düşemeyeceği için o günün imsak→güneş
+// süresi (dk) kutuya yazılabilecek en büyük değerdir. Her gün/şehir için render()'da
+// yeniden hesaplanır. Veri yokken (null) üst sınır uygulanmaz; ilk render'da devreye girer.
+let offsetDayMax = null;
+function getOffsetMax() { return offsetDayMax || Infinity; }
+// render() başında çağrılır: bugünün imsak→güneş süresini bulur, kutunun üst sınırını
+// (max) ayarlar; kutudaki değer sınırı aşıyorsa sınıra indirir ve kaydeder.
+// Yazım sırasında (kutu odaktayken) değere dokunmaz.
+function applyOffsetLimit(period) {
+  const day = period && period.imsakDay;
+  const imsak = day ? parseTime(day.imsak, day.date) : null;
+  const gunes = day ? parseTime(day.gunes, day.date) : null;
+  const diff = (imsak && gunes) ? Math.floor((gunes.getTime() - imsak.getTime()) / 60000) : 0;
+  offsetDayMax = diff >= SABAH_OFFSET_MIN ? diff : null;
+  const el = document.getElementById("sabahOffset");
+  if (!el) return;
+  if (offsetDayMax) {
+    el.max = String(offsetDayMax);
+    el.title = "Bugün için en fazla " + offsetDayMax + " dk (imsak vaktine kadar)";
+  } else {
+    el.removeAttribute("max");
+    el.removeAttribute("title");
+  }
+  if (offsetDayMax && document.activeElement !== el) {
+    const v = parseInt(el.value, 10);
+    if (!isNaN(v) && v > offsetDayMax) {
+      el.value = String(offsetDayMax);
+      try { localStorage.setItem(OFFSET_STORAGE_KEY, el.value); } catch (e) { console.warn("[storage] yazılamadı:", e); }
+    }
+  }
+}
 function getSabahOffset() {
   const el = document.getElementById("sabahOffset");
   const v = el ? parseInt(el.value, 10) : NaN;
   // Kutu boş veya 0 ise null döner: bu durumda sabah vakti İmsak'a eşitlenir (aşağıda calcDerived).
   if (isNaN(v) || v <= 0) return null;
-  return Math.min(Math.max(v, SABAH_OFFSET_MIN), SABAH_OFFSET_MAX);
+  return Math.min(Math.max(v, SABAH_OFFSET_MIN), getOffsetMax());
 }
 // Kutuya sınırı aşan bir değer yazıldıysa (örn. 999) hesapla uyumlu olması için
 // kutudaki değer de sınıra çekilir; aksi halde kutuda 999 görünür, hesapta üst sınır kullanılırdı.
@@ -841,7 +871,7 @@ function clampOffsetInput(el, final) {
   const v = parseInt(el.value, 10);
   if (isNaN(v)) return false;
   let c = v;
-  if (v > SABAH_OFFSET_MAX) c = SABAH_OFFSET_MAX;
+  if (v > getOffsetMax()) c = getOffsetMax();
   else if (final && v < SABAH_OFFSET_MIN) c = SABAH_OFFSET_MIN;
   if (c === v) return false;
   el.value = c;
@@ -911,7 +941,7 @@ function calcDerived(period) {
   const teheccud = new Date(imsak.getTime() - Math.floor(nightMs / 3));
   const sabahOnce = getSabahOffset();
   const sabahRaw = sabahOnce ? new Date(gunes.getTime() - sabahOnce * 60 * 1000) : imsak;
-  // Yaz aylarında imsak-güneş arası offset'ten kısa olabilir (örn. 141 dk < 180 dk);
+  // Yaz aylarında imsak-güneş arası offset'ten kısa olabilir (örn. 141 dk < 150 dk);
   // bu durumda sabah vakti imsaktan önceye düşmesin diye imsakta sınırlanır.
   const sabah    = sabahRaw < imsak ? imsak : sabahRaw;
   const cami     = new Date(gunes.getTime() - 30 * 60 * 1000);
@@ -978,7 +1008,10 @@ async function loadAndRender(retryAttempt = 0) {
 
     const isTransient = /Ağ hatası|zaman aşımı|Failed to fetch/i.test(msg);
 
-    if (isTransient && retryAttempt < 3) {
+    // Cihaz çevrimdışıysa (uçak modu vb.) 2/4/8 sn'lik yeniden deneme zincirini ve onunla
+    // gelen shimmer/hata mesajını beklemeden doğrudan kayıtlı yedek veriye geçilir;
+    // bağlantı gelince "online" olayı yenilemeyi zaten tetikler.
+    if (isTransient && retryAttempt < 3 && navigator.onLine !== false) {
       const waitSec = [2, 4, 8][retryAttempt];
       setStatus(waitSec + " sn sonra tekrar denenecek…", true);
       setTimeout(() => {
@@ -1029,6 +1062,7 @@ function setLoading(on) {
 }
 
 function render(period) {
+  applyOffsetLimit(period); // günlük ofset sınırı (imsak→güneş) hesaplamadan önce güncellenir
   setLoading(false);
   lastRenderedImsakDate = period.imsakDay.date.getTime();
   const { imsakDay } = period;
@@ -1373,7 +1407,7 @@ function resumeRefresh() {
   if (nowMs - lastResumeAt < 2000) return;
   lastResumeAt = nowMs;
   const period = state.times ? findActivePeriod(state.times) : null;
-  if (!period || state.stale) {
+  if (!period || (state.stale && navigator.onLine !== false)) {
     // Kullanıcı uygulamaya döndü / bağlantı geldi: taze deneme, eski geri çekilme sayacı sıfırlanır.
     retryCount = 0;
     loadAndRender();
@@ -1385,6 +1419,13 @@ document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible") resumeRefresh();
 });
 window.addEventListener("online", resumeRefresh);
+// Uygulama açıkken bağlantı kopunca (uçak modu): veriler ekranda kalır, kullanıcıya bilgi
+// verilir; stale=true olduğu için bağlantı gelince (online → resumeRefresh) taze veri çekilir.
+window.addEventListener("offline", () => {
+  if (!state.times) return;
+  state.stale = true;
+  setStatus("Çevrimdışı: kayıtlı vakitler gösteriliyor. Bağlantı gelince yenilenir.", false);
+});
 // iOS Safari bfcache: sayfa önbellekten geri gelince visibilitychange ateşlenmeyebilir,
 // yalnızca pageshow (persisted=true) ateşlenir.
 window.addEventListener("pageshow", (e) => { if (e.persisted) resumeRefresh(); });

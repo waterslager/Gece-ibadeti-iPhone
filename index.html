@@ -458,7 +458,7 @@
           <div class="offset-title">Süre Ayarla</div>
           <div class="offset-inline">
             <label for="sabahOffset">Güneşten önce (dk):</label>
-            <input type="number" id="sabahOffset" min="1" max="120" />
+            <input type="number" id="sabahOffset" min="1" max="120" inputmode="numeric" />
           </div>
         </div>
       </div>
@@ -692,12 +692,13 @@ async function getIlAdindakiIlce(ilId, ilAd) {
   // gösterildiğinden habersiz kalmaz (namaz vakti uygulamasında kritik).
   // Tam eşleşme yoksa API sıralamasına bağımlı data[0] yerine önce ismi tam "MERKEZ"
   // olan, sonra içinde "MERKEZ" geçen ilçe tercih edilir. Yalnızca tam eşleşme ve tam
-  // "MERKEZ" isExactMatch=true sayılır; diğer düşüşler kullanıcıya bildirilmeye devam eder.
+  // "MERKEZ" geçen ilçe de merkez kabul edilir (uyarı verilmez); yalnızca data[0]'a düşülürse
+  // isExactMatch=false ile kullanıcıya bildirilir.
   const up = (i) => (i.name || "").toLocaleUpperCase("tr").trim();
   const tamMerkez = tamEslesen ? null : data.find(i => up(i) === "MERKEZ");
   const icindeMerkez = (tamEslesen || tamMerkez) ? null : data.find(i => up(i).includes("MERKEZ"));
   const eslesen = tamEslesen || tamMerkez || icindeMerkez || data[0];
-  return { IlceID: eslesen._id, IlceAdi: eslesen.name, isExactMatch: !!(tamEslesen || tamMerkez) };
+  return { IlceID: eslesen._id, IlceAdi: eslesen.name, isExactMatch: !!(tamEslesen || tamMerkez || icindeMerkez) };
 }
 
 // E1: Intl.DateTimeFormat oluşturmak pahalı; her çağrıda yeniden yaratmak yerine
@@ -832,10 +833,19 @@ function getSabahOffset() {
 // Kutuya sınırı aşan bir değer yazıldıysa (örn. 999) hesapla uyumlu olması için
 // kutudaki değer de sınıra çekilir; aksi halde kutuda 999 görünür, hesapta üst sınır kullanılırdı.
 // Boş / 0 / geçersiz değerlere dokunulmaz (kullanıcı yazarken engellenmesin).
-function clampOffsetInput(el) {
-  if (!el) return;
+// Üst sınır yazarken anında düzeltilir. Alt sınır (final=true) yalnızca değer
+// onaylandığında (change/açılış) düzeltilir; yoksa "0" ile başlayan yazım bozulurdu.
+// Değer değiştiyse true döner (çağıran kalıcı saklamayı/yeniden çizimi tetikler).
+function clampOffsetInput(el, final) {
+  if (!el) return false;
   const v = parseInt(el.value, 10);
-  if (!isNaN(v) && v > SABAH_OFFSET_MAX) el.value = SABAH_OFFSET_MAX;
+  if (isNaN(v)) return false;
+  let c = v;
+  if (v > SABAH_OFFSET_MAX) c = SABAH_OFFSET_MAX;
+  else if (final && v < SABAH_OFFSET_MIN) c = SABAH_OFFSET_MIN;
+  if (c === v) return false;
+  el.value = c;
+  return true;
 }
 
 function findActivePeriod(timesList) {
@@ -1025,6 +1035,12 @@ function render(period) {
   $("dateLabel").textContent = formatDate(imsakDay.date);
   $("hijriLabel").textContent = imsakDay.hijri ? "Hicrî: " + imsakDay.hijri : "";
 
+  // Namaz Vakitleri kutusu calcDerived'dan önce güncellenir: hesap başarısız olsa bile
+  // kutu yeni şehrin verisini gösterir, boş/eski kalmaz.
+  // Vakit listesi artık dönemden değil İstanbul'un bugününden beslenir (refreshVakitList);
+  // üstteki kartlar ve tarih (imsakDay) aynen kaldı. Eksik vakitte "--:--" yazılır.
+  refreshVakitList(true);
+
   const d = calcDerived(period);
   if (d) {
     $("teheccudTime").textContent = fmt(d.teheccud);
@@ -1039,12 +1055,12 @@ function render(period) {
     const gunesMiniEl = document.getElementById("gunesMiniTime");
     if (gunesMiniEl) gunesMiniEl.textContent = fmt(d.gunes);
   } else {
+    // Hesaplanamayan kartlarda önceki şehrin saatleri hata mesajının yanında kalmasın;
+    // alttaki liste zaten yeni şehrin verisiyle güncellendi (yarım ekran olmasın).
+    ["teheccudTime", "arasiTime", "seherTime", "sabahTime", "camiTime", "imsakMiniTime", "gunesMiniTime"]
+      .forEach((id) => { const el = document.getElementById(id); if (el) el.textContent = "--:--"; });
     setStatus("Vakit verisi eksik geldi, sayfayı yenileyin.", true);
   }
-
-  // Vakit listesi artık dönemden değil İstanbul'un bugününden beslenir (refreshVakitList);
-  // üstteki kartlar ve tarih (imsakDay) aynen kaldı. Eksik vakitte "--:--" yazılır.
-  refreshVakitList(true);
 
   // 1.2: çağıran (loadAndRender) eksik veri hatasını silmesin diye sonuç bildirilir.
   return !!d;
@@ -1241,9 +1257,19 @@ async function init() {
   if (offsetInput) {
     try {
       const savedOffset = localStorage.getItem(OFFSET_STORAGE_KEY);
-      if (savedOffset !== null) { offsetInput.value = savedOffset; clampOffsetInput(offsetInput); }
+      if (savedOffset !== null) {
+        offsetInput.value = savedOffset;
+        // Sınır dışı kayıtlı değer düzeltilir ve geri yazılır (her açılışta tekrarlanmasın).
+        if (clampOffsetInput(offsetInput, true)) {
+          try { localStorage.setItem(OFFSET_STORAGE_KEY, offsetInput.value); } catch (e) { console.warn("[storage] yazılamadı:", e); }
+        }
+      }
     } catch (e) { console.warn("[storage] okunamadı:", e); }
 
+    // Değer onaylanınca alt sınır da düzeltilir; düzeldiyse input akışı (saklama + yeniden çizim) tekrar çalışır.
+    offsetInput.addEventListener("change", () => {
+      if (clampOffsetInput(offsetInput, true)) offsetInput.dispatchEvent(new Event("input"));
+    });
     offsetInput.addEventListener("input", () => {
       clampOffsetInput(offsetInput); // sınırı aşan değer kutuda da düzeltilir (saklanmadan önce)
       try { localStorage.setItem(OFFSET_STORAGE_KEY, offsetInput.value); } catch (e) { console.warn("[storage] yazılamadı:", e); }
@@ -1309,7 +1335,7 @@ async function onIlChange(e) {
     // Bu bir hata değil, bilgilendirme olduğundan setStatus(..., false) kullanılır.
     if (myToken === ilChangeToken && ilce.isExactMatch === false) {
       setStatus(
-        `"${ilAd}" için merkez ilçe otomatik seçilemedi, "${ilce.IlceAdi}" ilçesinin vakitleri gösteriliyor. ` +
+        `"${toTitle(ilAd)}" için merkez ilçe otomatik seçilemedi, "${ilce.IlceAdi}" ilçesinin vakitleri gösteriliyor. ` +
         "Farklı bir ilçe istiyorsanız il listesinden tekrar seçim yapın.",
         false
       );

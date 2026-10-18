@@ -629,9 +629,15 @@ function combineSignals(signalA, signalB) {
   return combined.signal;
 }
 
-// Kullanıcı kaynaklı iptal işareti: fetchJSON ve loadAndRender aynı sabiti
-// kullanır (iki yerde elle yazılan metnin harf farkıyla eşleşmemesi riskine karşı).
-const USER_ABORT_MSG = "İSTEK_IPTAL_KULLANICI";
+// Kullanıcı kaynaklı iptal işareti: mesaj metnine değil hata ADINA bakılır; böylece
+// hata başka bir katmanda sarmalansa/mesajı değişse bile eşleşme bozulmaz.
+const USER_ABORT_NAME = "UserAbortError";
+function makeUserAbortError() {
+  const err = new Error("İstek kullanıcı tarafından iptal edildi.");
+  err.name = USER_ABORT_NAME;
+  return err;
+}
+function isUserAbort(e) { return !!e && e.name === USER_ABORT_NAME; }
 
 async function fetchJSON(url, { timeoutMs = 15000, signal } = {}) {
   const timeoutController = new AbortController();
@@ -651,7 +657,7 @@ async function fetchJSON(url, { timeoutMs = 15000, signal } = {}) {
       if (timeoutController.signal.aborted) {
         throw new Error("Bağlantı zaman aşımına uğradı, tekrar deneyin.");
       }
-      throw new Error(USER_ABORT_MSG);
+      throw makeUserAbortError();
     }
     throw new Error("Ağ hatası: " + (e.message || e));
   } finally {
@@ -907,8 +913,11 @@ function findActivePeriod(timesList) {
   // todayGunes null ise (API'den "gunes" alanı eksik/bozuk geldiyse) karşılaştırma
   // yapılmaz, "güneş doğmadan önce" dalı atlanır; niyet kodda açık olsun diye
   // null kontrolü yazıldı (davranış öncekiyle aynı: now < null zaten false).
-  if (todayGunes && now < todayGunes && todayIdx > 0) {
-    return { aksamDay: timesList[todayIdx - 1], imsakDay: todayData };
+  if (todayGunes && now < todayGunes) {
+    if (todayIdx > 0) return { aksamDay: timesList[todayIdx - 1], imsakDay: todayData };
+    // Dünün akşamı listede yok (örn. eski önbellek): bugünün akşamıyla yanlış gece
+    // hesaplamak yerine null döner; çağıranlar veriyi yeniden çeker.
+    return null;
   }
   const next = timesList[todayIdx + 1];
   if (next) return { aksamDay: todayData, imsakDay: next };
@@ -1007,7 +1016,7 @@ async function loadAndRender(retryAttempt = 0) {
     // 1.1: Yukarıdaki requestId guard'ından geçildiyse bu istek hâlâ güncel demektir
     // (yeni bir istek başlamadı); bu durumda shimmer'ın ekranda takılı kalmaması
     // için loading kapatılır. Yeni istek başlamışsa guard zaten yukarıda çıkmıştır.
-    if (msg === USER_ABORT_MSG) {
+    if (isUserAbort(e)) {
       if (myRequestId === state.requestId) setLoading(false);
       return;
     }

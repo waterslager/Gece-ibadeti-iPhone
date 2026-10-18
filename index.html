@@ -629,8 +629,8 @@ function combineSignals(signalA, signalB) {
   return combined.signal;
 }
 
-// Kullanıcı kaynaklı iptal işareti: mesaj metnine değil hata ADINA bakılır; böylece
-// hata başka bir katmanda sarmalansa/mesajı değişse bile eşleşme bozulmaz.
+// Kullanıcı kaynaklı iptal işareti: fetchJSON ve loadAndRender aynı sabiti
+// kullanır (iki yerde elle yazılan metnin harf farkıyla eşleşmemesi riskine karşı).
 const USER_ABORT_NAME = "UserAbortError";
 function makeUserAbortError() {
   const err = new Error("İstek kullanıcı tarafından iptal edildi.");
@@ -915,8 +915,7 @@ function findActivePeriod(timesList) {
   // null kontrolü yazıldı (davranış öncekiyle aynı: now < null zaten false).
   if (todayGunes && now < todayGunes) {
     if (todayIdx > 0) return { aksamDay: timesList[todayIdx - 1], imsakDay: todayData };
-    // Dünün akşamı listede yok (örn. eski önbellek): bugünün akşamıyla yanlış gece
-    // hesaplamak yerine null döner; çağıranlar veriyi yeniden çeker.
+    // Dünün akşamı listede yok (örn. eski önbellek): yanlış gece hesabı yerine null döner.
     return null;
   }
   const next = timesList[todayIdx + 1];
@@ -1026,7 +1025,9 @@ async function loadAndRender(retryAttempt = 0) {
     if (state.countdownTimer) { clearInterval(state.countdownTimer); state.countdownTimer = null; }
     highlightCurrentVakit(null); // hata durumunda eski vurgu kalmasın
 
-    const isTransient = /Ağ hatası|zaman aşımı|Failed to fetch/i.test(msg);
+    // Geçici sayılanlar: ağ/zaman aşımı + sunucu tarafı geçici hatalar (5xx, 429, 408) ve
+// bozuk/boş yanıt (örn. captive portal HTML'i). Bunlarda yeniden deneme ve çevrimdışı yedek devreye girer.
+const isTransient = /Ağ hatası|zaman aşımı|Failed to fetch|API hatası: (?:5\d\d|429|408)|geçersiz yanıt/i.test(msg);
 
     // Cihaz çevrimdışıysa (uçak modu vb.) 2/4/8 sn'lik yeniden deneme zincirini ve onunla
     // gelen shimmer/hata mesajını beklemeden doğrudan kayıtlı yedek veriye geçilir;
@@ -1057,7 +1058,11 @@ async function loadAndRender(retryAttempt = 0) {
     }
     // Yeni şehir yüklenemediyse eski şehrin verisi state'te kalmasın
     // (aksi halde ofset değişince eski şehir yeniden çizilebilir).
-    if (state.timesIlceId !== failedIlceId) { state.times = null; state.timesIlceId = null; }
+    if (state.timesIlceId !== failedIlceId) {
+      state.times = null; state.timesIlceId = null;
+      // Yeni şehir yüklenemedi: ekranda önceki şehrin saatleri kalmasın (yanlış şehir saati riski).
+      clearDisplay();
+    }
 
     if (isTransient) {
       setStatus(
@@ -1079,6 +1084,19 @@ function setLoading(on) {
   // değişse bile (örn. .tm → başka bir sınıf), her iki dosyada da
   // aynı satır çalışmaya devam eder.
   document.querySelectorAll("[data-key]").forEach(el => el.classList.toggle("skeleton", on));
+}
+
+// Hesaplanan kartları ve geri sayımı boşaltır (şehir verisi alınamadığında önceki
+// şehrin saatlerinin ekranda kalmaması için).
+function clearDisplay() {
+  const setT = (id, t) => { const el = document.getElementById(id); if (el) el.textContent = t; };
+  ["teheccudTime", "arasiTime", "seherTime", "sabahTime", "camiTime", "imsakMiniTime", "gunesMiniTime"]
+    .forEach((id) => setT(id, "--:--"));
+  document.querySelectorAll("[data-key]").forEach((el) => { if (el.children.length === 0) el.textContent = "--:--"; });
+  setT("dateLabel", "-"); setT("hijriLabel", "");
+  lastGridDateKey = null;
+  setT("nextName", "—"); setT("nextTime", "--:--"); setT("nextRemain", "--:--:--");
+  cachedNextEvent = null;
 }
 
 function render(period) {
@@ -1379,6 +1397,10 @@ async function onIlChange(e) {
     if (!ilce) {
       // E3: Eski şehir state.location'da kalıp kullanıcıya yanlış şehir gösterilmesin.
       state.location = null;
+      state.times = null; state.timesIlceId = null;
+      if (state.countdownTimer) { clearInterval(state.countdownTimer); state.countdownTimer = null; }
+      clearDisplay();
+      setLoading(false);
       setStatus("Bu il için veri bulunamadı.", true);
       return;
     }
@@ -1398,6 +1420,9 @@ async function onIlChange(e) {
     }
   } catch (err) {
     if (myToken !== ilChangeToken) return;
+    // İlçe alınamadı: ekranda hâlâ önceki (geçerli) şehir var; seçiciyi ona geri al ki uyumsuz kalmasın.
+    if (state.location && state.location.ilId) sel.value = state.location.ilId;
+    updateIlCityDisplay();
     setStatus("Vakit verisi alınamadı: " + (err.message || err), true);
   }
 }

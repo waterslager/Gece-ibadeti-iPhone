@@ -216,6 +216,24 @@
     line-height: 1.4;
   }
 
+  .data-badge {
+
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+
+    margin: 0 0 12px; padding: 6px 12px; border-radius: 999px;
+
+    font-size: 0.78rem; color: var(--muted, #94a3b8);
+
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+
+  }
+
+  .data-badge::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #22c55e; flex: none; }
+
+  .data-badge.cache::before { background: #f59e0b; }
+
+  .data-badge.hidden { display: none; }
+
   .status {
     text-align: center;
     padding: 12px;
@@ -498,6 +516,8 @@
       </div>
     </div>
 
+    <div id="dataBadge" class="data-badge hidden" role="status" aria-live="polite"></div>
+
     <div class="status hidden" id="status" role="status" aria-live="polite"></div>
 
     <footer class="footer">
@@ -545,14 +565,91 @@ let lastScanAt = 0;
 // olarak kesilirse çevrimdışı yedek olarak gösterilir. Date nesneleri JSON'a
 // timestamp olarak yazılır, okurken geri çevrilir.
 const TIMES_CACHE_KEY = "lastTimes";
-function saveTimesCache(ilceId, times) {
-  cacheSet(TIMES_CACHE_KEY, { ilceId, times: times.map((t) => ({ ...t, date: t.date.getTime() })) });
+const TIMES_COLS = ["imsak", "gunes", "ogle", "ikindi", "aksam", "yatsi"];
+// TTL'siz okuma: önbellekteki günler tarihe göre geçerlidir (7 günlük genel TTL burada uygulanmaz).
+function cacheGetEntry(key) {
+  try {
+    const raw = localStorage.getItem(CACHE_PREFIX + key);
+    if (!raw) return null;
+    const obj = JSON.parse(raw);
+    return obj && typeof obj.ts === "number" ? obj : null;
+  } catch (e) { console.warn("[storage] okunamadı:", e); return null; }
+}
+function timeEntryValid(t) {
+  return !!t && t.date instanceof Date && !isNaN(t.date.getTime()) &&
+    TIMES_COLS.every((k) => typeof t[k] === "string" && /^\d{2}:\d{2}$/.test(t[k]));
+}
+// Dönen: { times, ts } (ts = son başarılı canlı güncelleme zamanı) veya null.
+function readTimesCache(ilceId) {
+  const e = cacheGetEntry(TIMES_CACHE_KEY);
+  const c = e && e.data;
+  if (!c || c.ilceId !== ilceId || !Array.isArray(c.times) || !c.times.length) return null;
+  const times = c.times.map((t) => ({ ...t, date: new Date(t.date) })).filter(timeEntryValid);
+  return times.length ? { times, ts: e.ts } : null;
 }
 function loadTimesCache(ilceId) {
-  const c = cacheGet(TIMES_CACHE_KEY);
-  if (!c || c.ilceId !== ilceId || !Array.isArray(c.times) || !c.times.length) return null;
-  const times = c.times.map((t) => ({ ...t, date: new Date(t.date) }));
-  return times.every((t) => !isNaN(t.date.getTime())) ? times : null;
+  const r = readTimesCache(ilceId);
+  return r ? r.times : null;
+}
+// Aynı ilçenin önbelleği tarih bazında BİRLEŞTİRİLİR: yeni (canlı) gün eskisini ezer,
+// eksik/bozuk günler alınmaz, dünden eski günler atılır. Böylece 30 günlük aralık
+// birkaç kısa istekle de olsa korunur.
+function saveTimesCache(ilceId, newTimes) {
+  const old = readTimesCache(ilceId);
+  const map = new Map();
+  if (old) old.times.forEach((t) => map.set(t.date.getTime(), t));
+  newTimes.forEach((t) => { if (timeEntryValid(t)) map.set(t.date.getTime(), t); });
+  const cutoff = Date.now() - 2 * 86400000;
+  const merged = [...map.values()].filter((t) => t.date.getTime() >= cutoff).sort((a, b) => a.date - b.date);
+  if (!merged.length) return;
+  cacheSet(TIMES_CACHE_KEY, { ilceId, times: merged.map((t) => ({ ...t, date: t.date.getTime() })) });
+}
+
+// Ekranda gösterilen verinin kaynağı: "live" (az önce API'den) | "cache" (kayıtlı) | null.
+const dataBadge = document.getElementById("dataBadge");
+function setDataMode(mode, ts) {
+  state.dataMode = mode;
+  if (!dataBadge) return;
+  if (!mode) { dataBadge.classList.add("hidden"); dataBadge.textContent = ""; return; }
+  const d = new Date(ts || Date.now());
+  const tz = { timeZone: "Europe/Istanbul" };
+  const time = d.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit", ...tz });
+  const day = d.toLocaleDateString("tr-TR", { day: "numeric", month: "short", ...tz });
+  dataBadge.textContent = mode === "live"
+    ? "Canlı veri · " + time + " itibarıyla"
+    : "Kayıtlı veri · " + day + " " + time + " itibarıyla";
+  dataBadge.classList.toggle("cache", mode === "cache");
+  dataBadge.classList.remove("hidden");
+}
+
+// Arka planda bugünden itibaren 30 günlük vakti önbelleğe ekler (en fazla ~10 dk'da bir dener,
+// önbellek 25+ gün ileriyi kapsıyorsa hiç istek yapmaz). Başarısız olursa sessizce vazgeçer;
+// aralık sınırı varsa 30 → 14 → 7 gün diye küçültür.
+let extendRunning = false;
+let lastExtendTry = 0;
+async function extendTimesCache(ilceId) {
+  if (extendRunning || Date.now() - lastExtendTry < 600000) return;
+  const p = getIstanbulParts();
+  const todayMs = Date.UTC(p.year, p.month - 1, p.day);
+  const cached = readTimesCache(ilceId);
+  const lastMs = cached ? Math.max(...cached.times.map((t) => t.date.getTime())) : 0;
+  if (lastMs - todayMs >= 25 * 86400000) return;
+  extendRunning = true;
+  lastExtendTry = Date.now();
+  try {
+    for (const span of [30, 14, 7]) {
+      try {
+        const ext = await getVakitlerDiyanet(ilceId, undefined, 0, span, 30000);
+        if (!state.location || state.location.ilceId !== ilceId) return; // bu arada şehir değişti
+        saveTimesCache(ilceId, ext);
+        return;
+      } catch (e) {
+        const m = String((e && e.message) || e).match(/API hatası: (\d+)/);
+        const code = m ? Number(m[1]) : 0;
+        if (!(code >= 400 && code < 500 && code !== 408 && code !== 429)) return; // ağ/sunucu sorunu: küçültmek çözmez
+      }
+    }
+  } finally { extendRunning = false; }
 }
 
 function setStatus(msg, isError) {
@@ -730,13 +827,13 @@ function isoDate(d) {
   return d.getUTCFullYear() + "-" + pad(d.getUTCMonth() + 1) + "-" + pad(d.getUTCDate());
 }
 
-async function getVakitlerDiyanet(ilceId, signal) {
+async function getVakitlerDiyanet(ilceId, signal, fromDays = -1, toDays = 3, timeoutMs = 15000) {
   const p = getIstanbulParts();
   const today = new Date(Date.UTC(p.year, p.month - 1, p.day, 12, 0, 0));
-  const start = new Date(today); start.setUTCDate(start.getUTCDate() - 1);
-  const end = new Date(today); end.setUTCDate(end.getUTCDate() + 3);
+  const start = new Date(today); start.setUTCDate(start.getUTCDate() + fromDays);
+  const end = new Date(today); end.setUTCDate(end.getUTCDate() + toDays);
   const url = `${DIYANET_BASE}/prayer-times/${encodeURIComponent(ilceId)}/range?startDate=${isoDate(start)}&endDate=${isoDate(end)}`;
-  const data = await fetchJSON(url, { signal });
+  const data = await fetchJSON(url, { signal, timeoutMs });
   if (!Array.isArray(data)) throw new Error("Sunucudan geçersiz yanıt geldi.");
   return data.map(d => {
     const t = (d.times && typeof d.times === "object") ? d.times : d;
@@ -982,8 +1079,25 @@ async function loadAndRender(retryAttempt = 0) {
   state.abortController = new AbortController();
   const myAbortController = state.abortController;
 
-  setLoading(true);
-  if (retryAttempt === 0) setStatus("Vakitler çekiliyor…");
+  // Ekranda henüz bu ilçenin verisi yoksa ve kayıtlı (önbellek) veri varsa, canlı veri
+  // beklenirken kayıtlı vakitler HEMEN gösterilir; canlı veri gelince yerini alır.
+  let showingCache = false;
+  if (retryAttempt === 0 && !(state.times && state.timesIlceId === state.location.ilceId)) {
+    const cached = readTimesCache(state.location.ilceId);
+    const cp = cached ? findActivePeriod(cached.times) : null;
+    if (cp) {
+      state.times = cached.times;
+      state.timesIlceId = state.location.ilceId;
+      state.stale = true;
+      if (render(cp)) {
+        startCountdown();
+        setDataMode("cache", cached.ts);
+        showingCache = true;
+      }
+    }
+  }
+  if (!showingCache) setLoading(true);
+  if (retryAttempt === 0) setStatus(showingCache ? "Güncel vakitler alınıyor…" : "Vakitler çekiliyor…");
 
   try {
     const times = await getVakitlerDiyanet(state.location.ilceId, myAbortController.signal);
@@ -1004,6 +1118,8 @@ async function loadAndRender(retryAttempt = 0) {
       startCountdown();
       retryCount = 0;
       saveTimesCache(state.location.ilceId, times); // çevrimdışı yedek için
+      setDataMode("live", Date.now());
+      extendTimesCache(state.location.ilceId).catch(() => {}); // arka planda 30 güne tamamla
     }
   } catch (e) {
     if (myRequestId !== state.requestId) return; // eskimiş isteğin hatası, yoksay
@@ -1022,8 +1138,12 @@ async function loadAndRender(retryAttempt = 0) {
     console.error(e);
 
     // E5: Hata durumunda eski şehrin geri sayımı çalışmaya devam etmesin.
-    if (state.countdownTimer) { clearInterval(state.countdownTimer); state.countdownTimer = null; }
-    highlightCurrentVakit(null); // hata durumunda eski vurgu kalmasın
+    // Ekranda aynı ilçenin kayıtlı verisi gösteriliyorsa geri sayım ve vurgu bozulmasın.
+    const keepCache = state.dataMode === "cache" && state.location && state.timesIlceId === state.location.ilceId;
+    if (!keepCache) {
+      if (state.countdownTimer) { clearInterval(state.countdownTimer); state.countdownTimer = null; }
+      highlightCurrentVakit(null); // hata durumunda eski vurgu kalmasın
+    }
 
     // Geçici sayılanlar: ağ/zaman aşımı + sunucu tarafı geçici hatalar (5xx, 429, 408) ve
 // bozuk/boş yanıt (örn. captive portal HTML'i). Bunlarda yeniden deneme ve çevrimdışı yedek devreye girer.
@@ -1052,6 +1172,8 @@ const isTransient = /Ağ hatası|zaman aşımı|Failed to fetch|API hatası: (?:
       state.stale = true; // bağlantı dönünce / uygulama öne gelince yenilenir
       if (render(fallbackPeriod)) {
         startCountdown();
+        const fbEntry = readTimesCache(failedIlceId);
+        setDataMode("cache", fbEntry ? fbEntry.ts : Date.now());
         setStatus("Çevrimdışı: kayıtlı vakitler gösteriliyor. Bağlantı gelince yenilenir. (" + String(msg).slice(0, 70) + ")", false);
       }
       return;
@@ -1097,6 +1219,7 @@ function clearDisplay() {
   lastGridDateKey = null;
   setT("nextName", "—"); setT("nextTime", "--:--"); setT("nextRemain", "--:--:--");
   cachedNextEvent = null;
+  setDataMode(null);
 }
 
 function render(period) {

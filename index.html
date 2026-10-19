@@ -1034,7 +1034,7 @@ const isTransient = /Ağ hatası|zaman aşımı|Failed to fetch|API hatası: (?:
     // bağlantı gelince "online" olayı yenilemeyi zaten tetikler.
     if (isTransient && retryAttempt < 3 && navigator.onLine !== false) {
       const waitSec = [2, 4, 8][retryAttempt];
-      setStatus(waitSec + " sn sonra tekrar denenecek…", true);
+      setStatus(String(msg).slice(0, 70) + " — " + waitSec + " sn sonra tekrar denenecek…", true);
       setTimeout(() => {
         if (myRequestId === state.requestId) loadAndRender(retryAttempt + 1);
       }, waitSec * 1000);
@@ -1052,7 +1052,7 @@ const isTransient = /Ağ hatası|zaman aşımı|Failed to fetch|API hatası: (?:
       state.stale = true; // bağlantı dönünce / uygulama öne gelince yenilenir
       if (render(fallbackPeriod)) {
         startCountdown();
-        setStatus("Çevrimdışı: kayıtlı vakitler gösteriliyor. Bağlantı gelince yenilenir.", false);
+        setStatus("Çevrimdışı: kayıtlı vakitler gösteriliyor. Bağlantı gelince yenilenir. (" + String(msg).slice(0, 70) + ")", false);
       }
       return;
     }

@@ -8,7 +8,7 @@
 
 <meta name="description" content="Diyanet İşleri Başkanlığı verilerine dayalı Teheccüd, Seher ve Sabah Namazı vakitleri.">
 <meta name="color-scheme" content="dark">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://ezanvakti.imsakiyem.com https://*.imsakiyem.com; object-src 'none'; base-uri 'none'; form-action 'self';">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://ezanvakti.imsakiyem.com https://*.imsakiyem.com https://ezanvakti.emushaf.net https://api.aladhan.com; object-src 'none'; base-uri 'none'; form-action 'self';">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="192.png">
 <link rel="icon" type="image/png" sizes="192x192" href="192.png">
@@ -118,6 +118,9 @@
     -webkit-appearance: none;
     -moz-appearance: none;
   }
+
+  .il-card.src-card { background: #ffffff; }
+  .il-card.src-card .il-label { font-size: 9.5px; }
 
   .date-bar {
     display: flex;
@@ -429,6 +432,16 @@
       <select id="ilSel" aria-label="İl seçimi"><option>Yükleniyor…</option></select>
     </div>
 
+    <div class="il-card src-card">
+      <span class="il-label">Veri kaynağı seç</span>
+      <span class="il-city" id="srcDisplay" aria-live="polite">ezanvakti.imsakiyem.com</span>
+      <select id="sourceSel" aria-label="Veri kaynağı seçimi">
+        <option value="imsakiyem" selected>ezanvakti.imsakiyem.com</option>
+        <option value="emushaf">mushaf (ezanvakti.emushaf.net)</option>
+        <option value="aladhan">api.aladhan.com</option>
+      </select>
+    </div>
+
     <div class="date-bar">
       <div class="left" id="dateLabel">—</div>
       <div class="hijri" id="hijriLabel"></div>
@@ -521,8 +534,8 @@
     <div class="status hidden" id="status" role="status" aria-live="polite"></div>
 
     <footer class="footer">
-      Veri kaynağı: <span class="org">Diyanet İşleri Başkanlığı</span><br>
-      (<span class="src">ezanvakti.imsakiyem.com</span>).<br>
+      Veri kaynağı: <span class="org" id="srcNote">Diyanet İşleri Başkanlığı</span><br>
+      (<span class="src" id="srcDomain">ezanvakti.imsakiyem.com</span>).<br>
       Her açılışta otomatik güncellenir.
     </footer>
   </div>
@@ -537,6 +550,9 @@ const CACHE_PREFIX = "teheccud-seher.cache.";
 const $ = (id) => document.getElementById(id);
 const statusEl = $("status");
 const ilCityDisplay = $("ilCityDisplay");
+const stateSelect = $("ilSel");
+const sourceSelect = $("sourceSel");
+const srcDisplay = $("srcDisplay");
 function updateIlCityDisplay() {
   const sel = $("ilSel");
   const opt = sel.options[sel.selectedIndex];
@@ -703,6 +719,30 @@ function cacheSet(key, data) {
 }
 
 const DIYANET_BASE = "https://ezanvakti.imsakiyem.com/api";
+const EMUSHAF_BASE = "https://ezanvakti.emushaf.net";
+const ALADHAN_BASE = "https://api.aladhan.com/v1";
+
+// Veri kaynağı: "imsakiyem" (varsayılan, her açılışta bununla başlar) | "emushaf" | "aladhan".
+// Yalnızca imsakiyem için son 30 günlük yedek (ön bellek) kullanılır; diğerleri her zaman canlı.
+let source = "imsakiyem";
+const SOURCE_TIMEOUT_MS = 6000; // imsakiyem canlı veri bekleme süresi; sonra yedeğe geçilir
+const SOURCE_INFO = {
+  imsakiyem: { note: "Diyanet İşleri Başkanlığı", domain: "ezanvakti.imsakiyem.com" },
+  emushaf:   { note: "Diyanet İşleri Başkanlığı", domain: "ezanvakti.emushaf.net" },
+  aladhan:   { note: "AlAdhan · Diyanet yöntemi", domain: "api.aladhan.com" }
+};
+
+// 81 il (Diyanet il kimlikleri 500–580, alfabetik). mushaf ve aladhan kaynaklarında il listesi buradan gelir.
+const IL_TR = ["ADANA","ADIYAMAN","AFYONKARAHİSAR","AĞRI","AKSARAY","AMASYA","ANKARA","ANTALYA","ARDAHAN","ARTVİN","AYDIN","BALIKESİR","BARTIN","BATMAN","BAYBURT","BİLECİK","BİNGÖL","BİTLİS","BOLU","BURDUR","BURSA","ÇANAKKALE","ÇANKIRI","ÇORUM","DENİZLİ","DİYARBAKIR","DÜZCE","EDİRNE","ELAZIĞ","ERZİNCAN","ERZURUM","ESKİŞEHİR","GAZİANTEP","GİRESUN","GÜMÜŞHANE","HAKKARİ","HATAY","IĞDIR","ISPARTA","İSTANBUL","İZMİR","KAHRAMANMARAŞ","KARABÜK","KARAMAN","KARS","KASTAMONU","KAYSERİ","KİLİS","KIRIKKALE","KIRKLARELİ","KIRŞEHİR","KOCAELİ","KONYA","KÜTAHYA","MALATYA","MANİSA","MARDİN","MERSİN","MUĞLA","MUŞ","NEVŞEHİR","NİĞDE","ORDU","OSMANİYE","RİZE","SAKARYA","SAMSUN","ŞANLIURFA","SİİRT","SİNOP","ŞIRNAK","SİVAS","TEKİRDAĞ","TOKAT","TRABZON","TUNCELİ","UŞAK","VAN","YALOVA","YOZGAT","ZONGULDAK"];
+function trToEn(s) {
+  return String(s || "").replace(/[İIıi]/g, "I").replace(/[Şş]/g, "S").replace(/[Ğğ]/g, "G")
+    .replace(/[Üü]/g, "U").replace(/[Öö]/g, "O").replace(/[Çç]/g, "C");
+}
+const STATIC_ILLER = IL_TR.map((ad, i) => ({ id: String(500 + i), ad, en: trToEn(ad) }));
+function sameIl(a, b) {
+  const n = (x) => trToEn(String(x || "").toLocaleUpperCase("tr").trim());
+  return !!a && !!b && n(a) === n(b);
+}
 
 // #6: Dışarıdan verilen bir signal (örn. state.abortController.signal) ile
 // zaman-aşımı için oluşturulan iç signal'i birleştirir. Eski tarayıcı desteği
@@ -777,7 +817,7 @@ async function fetchJSON(url, { timeoutMs = 15000, signal } = {}) {
 async function getIller() {
   const cached = cacheGet("iller");
   if (cached) return cached;
-  const data = await fetchJSON(`${DIYANET_BASE}/locations/states?countryId=2`);
+  const data = await fetchJSON(`${DIYANET_BASE}/locations/states?countryId=2`, { timeoutMs: SOURCE_TIMEOUT_MS });
   if (!Array.isArray(data)) throw new Error("Sunucudan geçersiz yanıt geldi.");
   data.sort((a, b) => (a.name || "").localeCompare(b.name || "", "tr"));
   const normalized = data.map(s => ({ SehirID: s._id, SehirAdi: s.name }));
@@ -834,7 +874,13 @@ async function getVakitlerDiyanet(ilceId, signal, fromDays = -1, toDays = 3, tim
   const end = new Date(today); end.setUTCDate(end.getUTCDate() + toDays);
   const url = `${DIYANET_BASE}/prayer-times/${encodeURIComponent(ilceId)}/range?startDate=${isoDate(start)}&endDate=${isoDate(end)}`;
   const data = await fetchJSON(url, { signal, timeoutMs });
+  return mapDiyanetDays(data);
+}
+
+// Diyanet biçimli (imsakiyem ve mushaf) günlük kayıtları uygulamanın iç biçimine çevirir.
+function mapDiyanetDays(data) {
   if (!Array.isArray(data)) throw new Error("Sunucudan geçersiz yanıt geldi.");
+  const p = getIstanbulParts();
   return data.map(d => {
     const t = (d.times && typeof d.times === "object") ? d.times : d;
     const pick = (a, b) => {
@@ -876,26 +922,99 @@ async function getVakitlerDiyanet(ilceId, signal, fromDays = -1, toDays = 3, tim
   });
 }
 
+// ---- mushaf (ezanvakti.emushaf.net): il → merkez ilçe otomatik, ilçe seçimi yok ----
+async function getVakitlerEmushaf(ilceId, signal) {
+  const data = await fetchJSON(`${EMUSHAF_BASE}/vakitler/${encodeURIComponent(ilceId)}`, { signal, timeoutMs: 10000 });
+  return mapDiyanetDays(data);
+}
+async function getIlMerkezEmushaf(ilId, ilAd) {
+  const data = await fetchJSON(`${EMUSHAF_BASE}/ilceler/${encodeURIComponent(ilId)}`, { timeoutMs: 10000 });
+  if (!Array.isArray(data) || data.length === 0) return null;
+  const up = (x) => String(x || "").toLocaleUpperCase("tr").trim();
+  const aranan = up(ilAd);
+  const tam = data.find((i) => up(i.IlceAdi) === aranan);
+  const merkez = tam ? null : data.find((i) => up(i.IlceAdi) === "MERKEZ");
+  const icinde = (tam || merkez) ? null : data.find((i) => up(i.IlceAdi).includes("MERKEZ"));
+  const x = tam || merkez || icinde || data[0];
+  return { IlceID: String(x.IlceID), IlceAdi: x.IlceAdi, isExactMatch: !!(tam || merkez || icinde) };
+}
+
+// ---- aladhan (api.aladhan.com): yalnızca il bazlı, Diyanet hesaplama yöntemi (method=13) ----
+const HIJRI_TR = ["Muharrem","Safer","Rebiülevvel","Rebiülahir","Cemaziyelevvel","Cemaziyelahir","Recep","Şaban","Ramazan","Şevval","Zilkade","Zilhicce"];
+function aladhanHM(v) {
+  const m = typeof v === "string" ? v.match(/^(\d{1,2}):(\d{2})/) : null;
+  return m ? pad(Number(m[1])) + ":" + m[2] : "--:--";
+}
+async function getVakitlerAladhan(ilEn, signal) {
+  const p = getIstanbulParts();
+  const dim = new Date(Date.UTC(p.year, p.month, 0)).getUTCDate();
+  const months = [[p.year, p.month]];
+  if (p.day <= 1) months.unshift(p.month === 1 ? [p.year - 1, 12] : [p.year, p.month - 1]);
+  if (dim - p.day < 3) months.push(p.month === 12 ? [p.year + 1, 1] : [p.year, p.month + 1]);
+  const city = encodeURIComponent(String(ilEn || "").toLowerCase().replace(/(^|[ \-])([a-z])/g, (_, a, b) => a + b.toUpperCase()));
+  const lists = await Promise.all(months.map(([y, m]) =>
+    fetchJSON(`${ALADHAN_BASE}/calendarByCity/${y}/${m}?city=${city}&country=Turkey&method=13`, { signal, timeoutMs: 10000 })));
+  const out = [];
+  for (const data of lists) {
+    if (!Array.isArray(data)) throw new Error("Sunucudan geçersiz yanıt geldi.");
+    for (const d of data) {
+      const t = d && d.timings ? d.timings : {};
+      const g = d && d.date && d.date.gregorian;
+      const h = d && d.date && d.date.hijri;
+      const gm = g && typeof g.date === "string" ? g.date.match(/^(\d{2})-(\d{2})-(\d{4})$/) : null;
+      if (!gm) continue;
+      out.push({
+        date:   new Date(Date.UTC(Number(gm[3]), Number(gm[2]) - 1, Number(gm[1]))),
+        imsak:  aladhanHM(t.Fajr),
+        gunes:  aladhanHM(t.Sunrise),
+        ogle:   aladhanHM(t.Dhuhr),
+        ikindi: aladhanHM(t.Asr),
+        aksam:  aladhanHM(t.Maghrib),
+        yatsi:  aladhanHM(t.Isha),
+        hijri:  (h && h.month && h.day && h.year)
+          ? Number(h.day) + " " + (HIJRI_TR[Number(h.month.number) - 1] || h.month.en || "") + " " + h.year : ""
+      });
+    }
+  }
+  out.sort((a, b) => a.date - b.date);
+  return out;
+}
+
+function getVakitler(src, loc, signal) {
+  if (src === "emushaf") return getVakitlerEmushaf(loc.ilceId, signal);
+  if (src === "aladhan") return getVakitlerAladhan(loc.ilEn, signal);
+  return getVakitlerDiyanet(loc.ilceId, signal, -1, 3, SOURCE_TIMEOUT_MS);
+}
+
 function toTitle(s) {
   if (!s) return s;
   return s.toLocaleLowerCase("tr").replace(/(^|[ \-'])([a-zçğıöşüâî])/gu, (_, p1, p2) => p1 + p2.toLocaleUpperCase("tr"));
 }
 
 async function populateIller() {
-  const sel = $("ilSel");
-  clearChildren(sel);
+  clearChildren(stateSelect);
+  const mySrc = source;
+  if (mySrc !== "imsakiyem") {
+    stateSelect.appendChild(makeOption("", "İl seçin…", undefined, { disabled: true, selected: true }));
+    for (const il of STATIC_ILLER) stateSelect.appendChild(makeOption(il.id, toTitle(il.ad), il.ad));
+    stateSelect.disabled = false;
+    return true;
+  }
   try {
     const iller = await getIller();
-    sel.appendChild(makeOption("", "İl seçin…", undefined, { disabled: true, selected: true }));
+    if (mySrc !== source) return true; // bu sırada kaynak değişti; yeni kaynağın listesi dokunulmaz
+    stateSelect.appendChild(makeOption("", "İl seçin…", undefined, { disabled: true, selected: true }));
     for (const il of iller) {
-      sel.appendChild(makeOption(il.SehirID, toTitle(il.SehirAdi), il.SehirAdi));
+      stateSelect.appendChild(makeOption(il.SehirID, toTitle(il.SehirAdi), il.SehirAdi));
     }
-    sel.disabled = false;
+    stateSelect.disabled = false;
     return true;
   } catch (e) {
-    sel.appendChild(makeOption("", "Yüklenemedi — sayfayı yenile", undefined, { disabled: true, selected: true }));
-    setStatus("İl listesi alınamadı: " + (e.message || "Bağlantı hatası") + " — Sayfayı yenileyip tekrar deneyin.", true);
-    return false; // E4: init() kayıtlı şehirle devam edebilsin diye sonuç bildirilir
+    if (mySrc !== source) return true;
+    stateSelect.appendChild(makeOption("", "Yüklenemedi — sayfayı yenile", undefined, { disabled: true, selected: true }));
+    // Zaten bir şehir yüklenmeye/gösterilmeye çalışılıyorsa onun durum mesajını ezme.
+    if (!state.location) setStatus("İl listesi alınamadı: " + (e.message || "Bağlantı hatası") + " — Sayfayı yenileyip tekrar deneyin.", true);
+    return false; // init() kayıtlı şehirle devam edebilsin diye sonuç bildirilir
   }
 }
 
@@ -1064,133 +1183,96 @@ function calcDerived(period) {
   return { teheccud, seher, sabah, cami, imsak, aksam, gunes };
 }
 
-async function loadAndRender(retryAttempt = 0) {
+async function loadAndRender() {
   if (!state.location) { setStatus("Lütfen il seçin."); return; }
   if (!state.location.ilceId) {
     setStatus("Vakit verisi hazırlanıyor…"); return;
   }
-
   const myRequestId = ++state.requestId;
+  const mySource = source;
+  const myLoc = state.location;
 
-  // #6: Önceki istek hâlâ sürüyorsa gerçekten iptal edilir (sadece sonucu
-  // yoksaymak yerine), böylece kullanıcı hızlıca şehir değiştirdiğinde eski
-  // fetch'ler boşuna ağ/pil tüketmeye devam etmez.
+  // Önceki istek hâlâ sürüyorsa gerçekten iptal edilir.
   if (state.abortController) state.abortController.abort();
   state.abortController = new AbortController();
   const myAbortController = state.abortController;
 
-  // Ekranda henüz bu ilçenin verisi yoksa ve kayıtlı (önbellek) veri varsa, canlı veri
-  // beklenirken kayıtlı vakitler HEMEN gösterilir; canlı veri gelince yerini alır.
-  let showingCache = false;
-  if (retryAttempt === 0 && !(state.times && state.timesIlceId === state.location.ilceId)) {
-    const cached = readTimesCache(state.location.ilceId);
-    const cp = cached ? findActivePeriod(cached.times) : null;
-    if (cp) {
-      state.times = cached.times;
-      state.timesIlceId = state.location.ilceId;
-      state.stale = true;
-      if (render(cp)) {
-        startCountdown();
-        setDataMode("cache", cached.ts);
-        showingCache = true;
-      }
-    }
-  }
-  if (!showingCache) setLoading(true);
-  if (retryAttempt === 0) setStatus(showingCache ? "Güncel vakitler alınıyor…" : "Vakitler çekiliyor…");
+  // Ekranda zaten bu kaynağın/ilçenin verisi varsa üzerine shimmer konmaz.
+  const haveShown = !!(state.times && state.timesIlceId === myLoc.ilceId && state.timesSource === mySource);
+  if (!haveShown) setLoading(true);
+  setStatus(haveShown ? "Güncel vakitler alınıyor…" : "Vakitler çekiliyor…");
 
   try {
-    const times = await getVakitlerDiyanet(state.location.ilceId, myAbortController.signal);
+    const times = await getVakitler(mySource, myLoc, myAbortController.signal);
 
     if (myRequestId !== state.requestId) return; // bu sırada daha yeni bir istek başladı, bu sonucu yoksay
 
     state.times = times;
-    state.timesIlceId = state.location.ilceId;
+    state.timesIlceId = myLoc.ilceId;
+    state.timesSource = mySource;
     state.stale = false;
     const period = findActivePeriod(times);
     if (!period) throw new Error("Bugün için veri bulunamadı.");
 
-    // 1.2: render() başarılıysa true döner. Başarısızsa (eksik veri) hata mesajını
-    // zaten kendisi yazmıştır; burada setStatus("") ile silinmez.
     const ok = render(period);
     if (ok) {
       setStatus("");
       startCountdown();
       retryCount = 0;
-      saveTimesCache(state.location.ilceId, times); // çevrimdışı yedek için
       setDataMode("live", Date.now());
-      extendTimesCache(state.location.ilceId).catch(() => {}); // arka planda 30 güne tamamla
+      if (mySource === "imsakiyem") { // ön bellek yalnızca imsakiyem için
+        saveTimesCache(myLoc.ilceId, times);
+        extendTimesCache(myLoc.ilceId).catch(() => {}); // arka planda 30 güne tamamla
+      }
     }
   } catch (e) {
     if (myRequestId !== state.requestId) return; // eskimiş isteğin hatası, yoksay
-
-    const msg = String((e && e.message) || e);
-    // Kullanıcı kaynaklı iptal (örn. hızlıca başka bir şehir seçti): requestId
-    // guard'ı bunu zaten yakalar, ama fetchJSON artık bunu ayrı bir işaretle
-    // döndürdüğü için burada da açıkça ve dayanıklı şekilde retry kurmadan çıkıyoruz.
-    // 1.1: Yukarıdaki requestId guard'ından geçildiyse bu istek hâlâ güncel demektir
-    // (yeni bir istek başlamadı); bu durumda shimmer'ın ekranda takılı kalmaması
-    // için loading kapatılır. Yeni istek başlamışsa guard zaten yukarıda çıkmıştır.
-    if (isUserAbort(e)) {
-      if (myRequestId === state.requestId) setLoading(false);
-      return;
-    }
+    if (isUserAbort(e)) { setLoading(false); return; }
     console.error(e);
 
-    // E5: Hata durumunda eski şehrin geri sayımı çalışmaya devam etmesin.
+    const msg = String((e && e.message) || e);
+    const isTransient = /Ağ hatası|zaman aşımı|Failed to fetch|API hatası: (?:5\d\d|429|408)|geçersiz yanıt/i.test(msg);
+
     // Ekranda aynı ilçenin kayıtlı verisi gösteriliyorsa geri sayım ve vurgu bozulmasın.
-    const keepCache = state.dataMode === "cache" && state.location && state.timesIlceId === state.location.ilceId;
+    const keepCache = state.dataMode === "cache" && state.timesIlceId === myLoc.ilceId && state.timesSource === mySource;
     if (!keepCache) {
       if (state.countdownTimer) { clearInterval(state.countdownTimer); state.countdownTimer = null; }
-      highlightCurrentVakit(null); // hata durumunda eski vurgu kalmasın
+      highlightCurrentVakit(null);
     }
 
-    // Geçici sayılanlar: ağ/zaman aşımı + sunucu tarafı geçici hatalar (5xx, 429, 408) ve
-// bozuk/boş yanıt (örn. captive portal HTML'i). Bunlarda yeniden deneme ve çevrimdışı yedek devreye girer.
-const isTransient = /Ağ hatası|zaman aşımı|Failed to fetch|API hatası: (?:5\d\d|429|408)|geçersiz yanıt/i.test(msg);
-
-    // Cihaz çevrimdışıysa (uçak modu vb.) 2/4/8 sn'lik yeniden deneme zincirini ve onunla
-    // gelen shimmer/hata mesajını beklemeden doğrudan kayıtlı yedek veriye geçilir;
-    // bağlantı gelince "online" olayı yenilemeyi zaten tetikler.
-    if (isTransient && retryAttempt < 3 && navigator.onLine !== false) {
-      const waitSec = [2, 4, 8][retryAttempt];
-      setStatus(String(msg).slice(0, 70) + " — " + waitSec + " sn sonra tekrar denenecek…", true);
-      setTimeout(() => {
-        if (myRequestId === state.requestId) loadAndRender(retryAttempt + 1);
-      }, waitSec * 1000);
-      return;
+    // Canlı veri herhangi bir nedenle alınamadıysa (zaman aşımı dahil) imsakiyem için
+    // son 30 günlük yedek HEMEN devreye girer. Yedekte sorun çıkarsa takılmadan hata gösterilir.
+    if (mySource === "imsakiyem") {
+      try {
+        const fallback = loadTimesCache(myLoc.ilceId);
+        const fallbackPeriod = fallback ? findActivePeriod(fallback) : null;
+        if (fallbackPeriod) {
+          state.times = fallback;
+          state.timesIlceId = myLoc.ilceId;
+          state.timesSource = mySource;
+          state.stale = true; // bağlantı dönünce / uygulama öne gelince yenilenir
+          if (render(fallbackPeriod)) {
+            startCountdown();
+            const fbEntry = readTimesCache(myLoc.ilceId);
+            setDataMode("cache", fbEntry ? fbEntry.ts : Date.now());
+            setStatus("Çevrimdışı: kayıtlı vakitler gösteriliyor. Bağlantı gelince yenilenir. (" + msg.slice(0, 70) + ")", false);
+            return;
+          }
+        }
+      } catch (ce) { console.warn("[cache] yedek kullanılamadı:", ce); }
     }
 
-    // Ağ kalıcı olarak yoksa, aynı şehre ait son başarılı veriyi çevrimdışı yedek
-    // olarak göster. findActivePeriod bugünü bulamazsa (liste bitmiş) yedek kullanılmaz.
-    const failedIlceId = state.location && state.location.ilceId;
-    const fallback = isTransient && failedIlceId ? loadTimesCache(failedIlceId) : null;
-    const fallbackPeriod = fallback ? findActivePeriod(fallback) : null;
-    if (fallbackPeriod) {
-      state.times = fallback;
-      state.timesIlceId = failedIlceId;
-      state.stale = true; // bağlantı dönünce / uygulama öne gelince yenilenir
-      if (render(fallbackPeriod)) {
-        startCountdown();
-        const fbEntry = readTimesCache(failedIlceId);
-        setDataMode("cache", fbEntry ? fbEntry.ts : Date.now());
-        setStatus("Çevrimdışı: kayıtlı vakitler gösteriliyor. Bağlantı gelince yenilenir. (" + String(msg).slice(0, 70) + ")", false);
-      }
-      return;
-    }
-    // Yeni şehir yüklenemediyse eski şehrin verisi state'te kalmasın
-    // (aksi halde ofset değişince eski şehir yeniden çizilebilir).
-    if (state.timesIlceId !== failedIlceId) {
-      state.times = null; state.timesIlceId = null;
-      // Yeni şehir yüklenemedi: ekranda önceki şehrin saatleri kalmasın (yanlış şehir saati riski).
+    // Yeni şehir/kaynak yüklenemediyse eski verisi state'te kalmasın.
+    if (state.timesIlceId !== myLoc.ilceId || state.timesSource !== mySource) {
+      state.times = null; state.timesIlceId = null; state.timesSource = null;
       clearDisplay();
     }
 
     if (isTransient) {
       setStatus(
         "Vakitler alınamadı. İnternet bağlantınızı kontrol edin; " +
-        "bazı işyeri/kurumsal ağlar bu veri kaynağına erişimi " +
-        "engelleyebilir. Mobil veri ile tekrar deneyin.",
+        "bazı işyeri/kurumsal ağlar bu veri kaynağına erişimi engelleyebilir. " +
+        "Yukarıdan farklı bir veri kaynağı seçebilirsiniz.",
         true
       );
     } else {
@@ -1475,76 +1557,169 @@ async function init() {
     });
   }
 
-  const illerOk = await populateIller();
-  illerLoaded = illerOk; // resumeRefresh liste yüklenemediyse yeniden dener
+  sourceSelect.addEventListener("change", () => activateSource(sourceSelect.value));
+  const s0 = readSession(SESSION_SRC_KEY);
+  await activateSource(SOURCE_INFO[s0] ? s0 : "imsakiyem", true);
+}
 
-  const saved = loadSaved();
-  if (saved && saved.ilId && saved.ilceId) {
-    // E4: İl listesi alınamadıysa <select> boş; yine de kayıtlı şehirle vakitler
-    // çekilir (vakit API'si il listesinden bağımsız). Select kontrolü sadece
-    // liste doluysa yapılır.
-    // #2: Kayıtlı ilId artık <select> seçeneklerinde yoksa (örn. API id şeması
-    // değiştiyse), value ataması sessizce boş kalır. Bu durumda arayüz ile arka
-    // planı senkron tutmak için state.location'ı ATAMIYORUZ ve loadAndRender
-    // ÇAĞIRMIYORUZ — kullanıcı açıkça yeniden seçim yapmaya yönlendirilir.
-    if (illerOk) {
-      $("ilSel").value = saved.ilId;
-      if ($("ilSel").value !== saved.ilId) {
-        state.location = null;
-        updateIlCityDisplay();
-        setStatus("Kayıtlı şehriniz artık bulunamadı, lütfen tekrar seçin.", true);
-        return;
-      }
-    }
-    state.location = saved;
-    updateIlCityDisplay();
-    // E4: Liste yüklenemediyse seçici "Şehir seçin..." gösterir; kayıtlı şehir adı yazılır.
-    if (!illerOk && saved.ilAd) ilCityDisplay.textContent = toTitle(saved.ilAd);
-    await loadAndRender();
-  } else {
-    setStatus("İl seçerek başlayın. Bu seçim hatırlanacaktır.");
+function updateSourceUI() {
+  const info = SOURCE_INFO[source] || SOURCE_INFO.imsakiyem;
+  sourceSelect.value = source;
+  const opt = sourceSelect.options[sourceSelect.selectedIndex];
+  srcDisplay.textContent = opt ? opt.textContent : info.domain;
+  const note = document.getElementById("srcNote");
+  const dom = document.getElementById("srcDomain");
+  if (note) note.textContent = info.note;
+  if (dom) dom.textContent = info.domain;
+}
+
+// Kaynak değiştirir (açılışta imsakiyem). Mevcut il, adına göre yeni kaynakta otomatik seçilir.
+// Hiçbir adım bekleyen ağ isteği yüzünden kaynak seçimini engellemez.
+let sourceToken = 0;
+// Son seçilen/gösterilen il adı: bir kaynakta veri gelmese bile kaynaklar arası geçişte il
+// yeniden sorulmaz. Kaynak ve il, sayfa yenilemede (çekip yenile) korunur; uygulama
+// tamamen kapatılıp açılınca (yeni oturum) imsakiyem ile ve kayıtlı il ile başlanır.
+const SESSION_SRC_KEY = "kiyamul-leyl.session.source";
+const SESSION_IL_KEY = "kiyamul-leyl.session.il";
+let lastIlAd = null;
+function rememberIl(ilAd) {
+  if (!ilAd) return;
+  lastIlAd = ilAd;
+  try { sessionStorage.setItem(SESSION_IL_KEY, ilAd); } catch (e) {}
+}
+function readSession(key) { try { return sessionStorage.getItem(key); } catch (e) { return null; } }
+async function activateSource(newSrc, initial) {
+  const myToken = ++sourceToken;
+  if (initial && !lastIlAd) lastIlAd = readSession(SESSION_IL_KEY);
+  if (initial && !lastIlAd) { const sv = loadSaved(); if (sv && sv.ilAd) lastIlAd = sv.ilAd; }
+  const prevIlAd = (state.location && state.location.ilAd) || lastIlAd;
+  try { sessionStorage.setItem(SESSION_SRC_KEY, newSrc); } catch (e) {}
+  source = newSrc;
+  updateSourceUI();
+
+  // Eski kaynağın devam eden istekleri ve kullanıcı seçimleri geçersiz sayılır.
+  state.requestId++;
+  if (state.abortController) { state.abortController.abort(); state.abortController = null; }
+  ilChangeToken++;
+  if (!initial) {
+    state.times = null; state.timesIlceId = null; state.timesSource = null; state.location = null;
+    if (state.countdownTimer) { clearInterval(state.countdownTimer); state.countdownTimer = null; }
+    clearDisplay();
+    setLoading(false);
+    setStatus("");
   }
+
+  const listPromise = populateIller(); // il listesi arka planda; vakit yüklemesini beklemez
+  updateIlCityDisplay();
+
+  let loc = null;
+  if (newSrc === "imsakiyem") {
+    const saved = loadSaved();
+    const savedOk = !!(saved && saved.ilId && saved.ilceId);
+    if (savedOk && (!prevIlAd || sameIl(prevIlAd, saved.ilAd))) {
+      loc = saved;
+    } else if (prevIlAd) {
+      const ok = await listPromise;
+      if (myToken !== sourceToken) return;
+      const opt = ok ? Array.from(stateSelect.options).find((o) => o.value && sameIl(o.dataset.ad, prevIlAd)) : null;
+      if (opt) { stateSelect.value = opt.value; updateIlCityDisplay(); await selectIl(opt.value, opt.dataset.ad); return; }
+      loc = savedOk ? saved : null;
+    } else if (savedOk) {
+      loc = saved;
+    }
+  } else if (prevIlAd) {
+    const il = STATIC_ILLER.find((x) => sameIl(x.ad, prevIlAd));
+    if (il) { stateSelect.value = il.id; updateIlCityDisplay(); await selectIl(il.id, il.ad); return; }
+  }
+
+  if (!loc) {
+    state.location = null;
+    updateIlCityDisplay();
+    setStatus(initial ? "İl seçerek başlayın. Bu seçim hatırlanacaktır." : "Bu kaynak için il seçin.");
+    listPromise.then((ok) => { if (myToken === sourceToken) illerLoaded = ok; });
+    return;
+  }
+
+  state.location = loc;
+  rememberIl(loc.ilAd);
+  if (loc.ilAd) ilCityDisplay.textContent = toTitle(loc.ilAd);
+  // İl listesi gelince seçici kayıtlı şehre getirilir (liste beklenmeden vakitler çekilmeye başlar).
+  listPromise.then((ok) => {
+    if (myToken !== sourceToken) return;
+    illerLoaded = ok;
+    if (!ok || !state.location) return;
+    stateSelect.value = state.location.ilId;
+    if (stateSelect.value !== state.location.ilId) {
+      // Kayıtlı il artık listede yok: eski davranış korunur.
+      state.requestId++;
+      if (state.abortController) { state.abortController.abort(); state.abortController = null; }
+      if (state.countdownTimer) { clearInterval(state.countdownTimer); state.countdownTimer = null; }
+      state.location = null; state.times = null; state.timesIlceId = null; state.timesSource = null;
+      clearDisplay(); setLoading(false);
+      updateIlCityDisplay();
+      setStatus("Kayıtlı şehriniz artık bulunamadı, lütfen tekrar seçin.", true);
+      return;
+    }
+    updateIlCityDisplay();
+  });
+  await loadAndRender();
 }
 
 let ilChangeToken = 0;
-async function onIlChange(e) {
+function onIlChange(e) {
   const sel = e.target;
   const ilId = sel.value;
   if (!ilId) return;
+  selectIl(ilId, sel.options[sel.selectedIndex].dataset.ad);
+}
+
+async function selectIl(ilId, ilAd) {
   const myToken = ++ilChangeToken;
-  const ilAd = sel.options[sel.selectedIndex].dataset.ad;
+  const mySource = source;
+  rememberIl(ilAd);
+
   setStatus("Vakit verisi alınıyor…");
+
   try {
-    const ilce = await getIlAdindakiIlce(ilId, ilAd);
-    if (myToken !== ilChangeToken) return; // bu sırada başka bir şehir seçildi
-    if (!ilce) {
-      // E3: Eski şehir state.location'da kalıp kullanıcıya yanlış şehir gösterilmesin.
-      state.location = null;
-      state.times = null; state.timesIlceId = null;
-      if (state.countdownTimer) { clearInterval(state.countdownTimer); state.countdownTimer = null; }
-      clearDisplay();
-      setLoading(false);
-      setStatus("Bu il için veri bulunamadı.", true);
-      return;
+    let loc;
+    let exact = true;
+    if (mySource === "aladhan") {
+      // aladhan: yalnızca il bazlı, ilçe yok.
+      const il = STATIC_ILLER.find((x) => x.id === String(ilId));
+      loc = { ilId: String(ilId), ilAd, ilceId: String(ilId), ilceAd: "", ilEn: il ? il.en : trToEn(ilAd) };
+    } else {
+      const ilce = mySource === "emushaf" ? await getIlMerkezEmushaf(ilId, ilAd) : await getIlAdindakiIlce(ilId, ilAd);
+      if (myToken !== ilChangeToken || mySource !== source) return; // bu sırada başka bir şehir/kaynak seçildi
+      if (!ilce) {
+        state.location = null;
+        state.times = null; state.timesIlceId = null; state.timesSource = null;
+        if (state.countdownTimer) { clearInterval(state.countdownTimer); state.countdownTimer = null; }
+        clearDisplay();
+        setLoading(false);
+        setStatus("Bu il için veri bulunamadı.", true);
+        return;
+      }
+      exact = ilce.isExactMatch;
+      loc = { ilId, ilAd, ilceId: ilce.IlceID, ilceAd: ilce.IlceAdi };
     }
-    state.location = { ilId, ilAd, ilceId: ilce.IlceID, ilceAd: ilce.IlceAdi };
-    saveLocation(state.location);
+    if (myToken !== ilChangeToken || mySource !== source) return;
+    state.location = loc;
+    if (mySource === "imsakiyem") saveLocation(loc); // il tercihi yalnızca imsakiyem için saklanır
     retryCount = 0; // kullanıcı eylemi: taze deneme
     await loadAndRender();
-    // #1: Tam merkez ilçe eşleşmesi bulunamadıysa (isExactMatch===false), sessizce
-    // yanlış vakit gösterme riskine karşı kullanıcıyı bilgi mesajıyla uyarıyoruz.
-    // Bu bir hata değil, bilgilendirme olduğundan setStatus(..., false) kullanılır.
-    if (myToken === ilChangeToken && ilce.isExactMatch === false) {
+    // Tam merkez ilçe eşleşmesi bulunamadıysa kullanıcı bilgilendirilir.
+    if (myToken === ilChangeToken && exact === false) {
       setStatus(
-        `"${toTitle(ilAd)}" için merkez ilçe otomatik seçilemedi, "${ilce.IlceAdi}" ilçesinin vakitleri gösteriliyor. ` +
+        `"${toTitle(ilAd)}" için merkez ilçe otomatik seçilemedi, "${loc.ilceAd}" ilçesinin vakitleri gösteriliyor. ` +
         "Farklı bir ilçe istiyorsanız il listesinden tekrar seçim yapın.",
         false
       );
     }
   } catch (err) {
     if (myToken !== ilChangeToken) return;
-    // İlçe alınamadı: ekranda hâlâ önceki (geçerli) şehir var; seçiciyi ona geri al ki uyumsuz kalmasın.
-    if (state.location && state.location.ilId) sel.value = state.location.ilId;
+    // Seçici ekrandaki geçerli şehre geri alınır ki uyumsuz kalmasın.
+    if (state.location && state.location.ilId) stateSelect.value = state.location.ilId;
+    else stateSelect.value = "";
     updateIlCityDisplay();
     setStatus("Vakit verisi alınamadı: " + (err.message || err), true);
   }
@@ -1597,6 +1772,33 @@ window.addEventListener("offline", () => {
 // iOS Safari bfcache: sayfa önbellekten geri gelince visibilitychange ateşlenmeyebilir,
 // yalnızca pageshow (persisted=true) ateşlenir.
 window.addEventListener("pageshow", (e) => { if (e.persisted) resumeRefresh(); });
+
+// Çekip yenile: sayfada overscroll-behavior-y: none olduğundan tarayıcının kendi çekip yenilemesi
+// çalışmaz (görünüm korunur). Sayfa en üstteyken parmakla aşağı çekip bırakınca vakitler
+// kaynaktan taze çekilir; ekranda ek bir öğe çıkmaz, durum satırı ve alttaki "Canlı veri" saati güncellenir.
+(function () {
+  let startY = null, maxPull = 0, lastRefreshAt = 0;
+  const atTop = () => (window.scrollY || (document.scrollingElement && document.scrollingElement.scrollTop) || 0) <= 0;
+  window.addEventListener("touchstart", (e) => {
+    startY = (e.touches.length === 1 && atTop()) ? e.touches[0].clientY : null;
+    maxPull = 0;
+  }, { passive: true });
+  window.addEventListener("touchmove", (e) => {
+    if (startY === null || !e.touches.length) return;
+    if (!atTop()) { startY = null; return; }
+    maxPull = Math.max(maxPull, e.touches[0].clientY - startY);
+  }, { passive: true });
+  window.addEventListener("touchend", () => {
+    const pulled = startY !== null && maxPull >= 90;
+    startY = null; maxPull = 0;
+    if (!pulled || !state.location || !state.location.ilceId) return;
+    const now = Date.now();
+    if (now - lastRefreshAt < 1500) return;
+    lastRefreshAt = now;
+    retryCount = 0;
+    loadAndRender();
+  }, { passive: true });
+})();
 
 init();
 

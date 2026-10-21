@@ -566,7 +566,9 @@ let state = {
   requestId: 0,
   abortController: null, // #6: devam eden vakit isteğini gerçekten iptal edebilmek için
   timesIlceId: null,     // state.times'ın hangi ilçeye ait olduğu (eski şehir verisini ayırt etmek için)
-  stale: false           // true: ekranda çevrimdışı/kayıtlı veri gösteriliyor
+  timesSource: null,     // state.times'ın hangi kaynağa ait olduğu
+  stale: false,          // true: ekranda çevrimdışı/kayıtlı veri gösteriliyor
+  dataMode: null         // ekrandaki verinin modu (örn. "cache")
 };
 
 // Okunabilirlik/statik analiz için ilgili tüm modül-seviyesi değişkenler
@@ -718,7 +720,7 @@ function cacheSet(key, data) {
   try { localStorage.setItem(CACHE_PREFIX + key, JSON.stringify({ ts: Date.now(), data })); } catch (e) { console.warn("[storage] yazılamadı:", e); }
 }
 
-const DIYANET_BASE = "https://ezanvakti.imsakiyem.com/api";
+const API_BASE = "https://ezanvakti.imsakiyem.com/api";
 const EMUSHAF_BASE = "https://ezanvakti.emushaf.net";
 const ALADHAN_BASE = "https://api.aladhan.com/v1";
 
@@ -817,7 +819,7 @@ async function fetchJSON(url, { timeoutMs = 15000, signal } = {}) {
 async function getIller() {
   const cached = cacheGet("iller");
   if (cached) return cached;
-  const data = await fetchJSON(`${DIYANET_BASE}/locations/states?countryId=2`, { timeoutMs: SOURCE_TIMEOUT_MS });
+  const data = await fetchJSON(`${API_BASE}/locations/states?countryId=2`, { timeoutMs: SOURCE_TIMEOUT_MS });
   if (!Array.isArray(data)) throw new Error("Sunucudan geçersiz yanıt geldi.");
   data.sort((a, b) => (a.name || "").localeCompare(b.name || "", "tr"));
   const normalized = data.map(s => ({ SehirID: s._id, SehirAdi: s.name }));
@@ -826,7 +828,7 @@ async function getIller() {
 }
 
 async function getIlAdindakiIlce(ilId, ilAd) {
-  const data = await fetchJSON(`${DIYANET_BASE}/locations/districts?stateId=${ilId}`);
+  const data = await fetchJSON(`${API_BASE}/locations/districts?stateId=${ilId}`);
   if (!Array.isArray(data) || data.length === 0) return null;
   const aranan = (ilAd || "").toLocaleUpperCase("tr").trim();
   const tamEslesen = data.find(i => (i.name || "").toLocaleUpperCase("tr").trim() === aranan);
@@ -872,7 +874,7 @@ async function getVakitlerDiyanet(ilceId, signal, fromDays = -1, toDays = 3, tim
   const today = new Date(Date.UTC(p.year, p.month - 1, p.day, 12, 0, 0));
   const start = new Date(today); start.setUTCDate(start.getUTCDate() + fromDays);
   const end = new Date(today); end.setUTCDate(end.getUTCDate() + toDays);
-  const url = `${DIYANET_BASE}/prayer-times/${encodeURIComponent(ilceId)}/range?startDate=${isoDate(start)}&endDate=${isoDate(end)}`;
+  const url = `${API_BASE}/prayer-times/${encodeURIComponent(ilceId)}/range?startDate=${isoDate(start)}&endDate=${isoDate(end)}`;
   const data = await fetchJSON(url, { signal, timeoutMs });
   return mapDiyanetDays(data);
 }
@@ -1080,11 +1082,10 @@ function applyOffsetLimit(period) {
 // Başka bir durum mesajı (hata/çevrimdışı) varsa üzerine yazılmaz; 4 sn sonra kendiliğinden kalkar.
 function showOffsetLimitNote() {
   if (!offsetDayMax) return;
-  const el = document.getElementById("status");
-  if (!el || el.textContent.trim()) return;
+  if (!statusEl || statusEl.textContent.trim()) return;
   const msg = "Bugün için en fazla " + offsetDayMax + " dk girilebilir (imsak vaktine kadar).";
   setStatus(msg, false);
-  setTimeout(() => { if (el.textContent === msg) setStatus(""); }, 4000);
+  setTimeout(() => { if (statusEl.textContent === msg) setStatus(""); }, 4000);
 }
 function getSabahOffset() {
   const el = document.getElementById("sabahOffset");
@@ -1296,7 +1297,7 @@ function clearDisplay() {
   const setT = (id, t) => { const el = document.getElementById(id); if (el) el.textContent = t; };
   ["teheccudTime", "arasiTime", "seherTime", "sabahTime", "camiTime", "imsakMiniTime", "gunesMiniTime"]
     .forEach((id) => setT(id, "--:--"));
-  document.querySelectorAll("[data-key]").forEach((el) => { if (el.children.length === 0) el.textContent = "--:--"; });
+  document.querySelectorAll("[data-key]").forEach((el) => { el.textContent = "--:--"; });
   setT("dateLabel", "-"); setT("hijriLabel", "");
   lastGridDateKey = null;
   setT("nextName", "—"); setT("nextTime", "--:--"); setT("nextRemain", "--:--:--");

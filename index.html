@@ -401,6 +401,17 @@
   }
   @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
   @media (prefers-reduced-motion: reduce) { .skeleton { animation: none; } }
+
+  .dk-box { display: none; flex-direction: column; gap: 1mm; margin-bottom: 1mm; }
+  .dk-card { border-radius: 10px; padding: 4px 8px 5px; background: #22c55e; color: #000; }
+  .dk-card.red { background: #ef4444; color: #fff; }
+  .dk-top { display: flex; align-items: center; gap: 6px; }
+  .dk-ttl { font-size: 0.8rem; font-weight: 700; white-space: nowrap; }
+  .dk-badge { background: #000; color: #fff; border-radius: 999px; padding: 0 6px; font-size: 0.55rem; font-weight: 700; letter-spacing: 0.06em; white-space: nowrap; }
+  .dk-rng { margin-left: auto; font-size: 1.25rem; font-weight: 700; line-height: 1.1; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .dk-cd { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; background: rgba(0,0,0,0.3); color: #fff; border-radius: 6px; padding: 0 6px; margin-top: 2px; line-height: 1.25; }
+  .dk-cd span { font-size: 0.52rem; }
+  .dk-cd b { font-size: 0.8rem; font-variant-numeric: tabular-nums; }
 </style>
 </head>
 <body>
@@ -497,6 +508,8 @@
         </div>
       </div>
     </div>
+
+    <div class="dk-box" id="dkBox"></div>
 
     <div class="vakit-table-card">
       <div class="card-icon kabe-icon">🕋</div>
@@ -1629,6 +1642,66 @@ if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("sw.js", { updateViaCache: "none" })
     .catch((err) => console.warn("[SW] Kayıt başarısız:", err));
 }
+</script>
+<script>
+/* Duha ve kerahat kutuları: uygulamanın kendi vakit verisini (state.times) kullanır */
+(function () {
+  "use strict";
+  const K = 50 * 60, KO = 30 * 60;   // sabah/ikindi kerahat 50 dk., öğle kerahat 30 dk.
+  const FIELDS = ["imsak", "gunes", "ogle", "ikindi", "aksam"];
+
+  /* Duha başlangıcı = imsak + (akşam − imsak)/4; artık saniyeler dakikaya ileri yuvarlanır (8:19:15 → 8:20) */
+  const DS = (x) => Math.ceil((x.imsak + (x.aksam - x.imsak) / 4) / 60) * 60;
+  const OS = (x) => x.ogle - KO, SE = (x) => x.gunes + K, IS = (x) => x.aksam - K, AK = (x) => x.aksam;
+
+  /* t:başlık s/e:vaktin başı/sonu g:görünen metin u:bu andan sonra yarın gösterilir (varsayılan akşam)
+     c:sayaç etiketi b:"ŞU AN" rozeti k:kerahat (vakit sürerken kırmızı; Duha'da tersi: vakit dışında kırmızı) */
+  const LIST = [
+    { t: "Duha (Kuşluk) Namazı Vakti", s: DS, e: OS, u: OS, g: (x) => hm(DS(x)) + " – " + hm(OS(x)), c: "Duha vaktinin çıkmasına kalan süre", b: 1 },
+    { t: "Sabah Kerahat Vakti Sonu", s: (x) => x.gunes, e: SE, g: (x) => hm(SE(x)), k: 1 },
+    { t: "Öğle Kerahat Vakti Başlangıcı", s: OS, e: (x) => x.ogle, g: (x) => hm(OS(x)), k: 1 },
+    { t: "İkindi Kerahat Vakti Başlangıcı", s: IS, e: AK, g: (x) => hm(IS(x)), k: 1 }
+  ];
+
+  const box = document.getElementById("dkBox");
+  const CLOCK = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Istanbul", hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  const hm = (v) => pad(Math.floor(v / 3600) % 24) + ":" + pad(Math.floor(v % 3600 / 60));
+  const hms = (v) => { v = Math.max(0, v | 0); return pad(Math.floor(v / 3600)) + ":" + pad(Math.floor(v % 3600 / 60)) + ":" + pad(v % 60); };
+  const secOf = (v) => { const m = /^(\d{1,2}):(\d{2})/.exec(v); return m ? m[1] * 3600 + m[2] * 60 : NaN; };
+  const nowSec = () => { const p = CLOCK.formatToParts(new Date()); const g = (t) => +p.find((x) => x.type === t).value; return g("hour") % 24 * 3600 + g("minute") * 60 + g("second"); };
+  const toDay = (d) => { const o = { k: d.date.getTime() }; FIELDS.forEach((f) => { o[f] = secOf(d[f]); }); return o; };
+
+  LIST.forEach((d) => { d.el = document.createElement("div"); box.appendChild(d.el); });
+
+  function draw(d, s, T0, T1) {
+    const el = d.el, day = s >= (d.u || AK)(T0) ? T1 : T0, on = s >= d.s(day) && s < d.e(day);
+    const q = (c) => el.querySelector(".dk-" + c), key = [on, day.k].join();
+    if (key !== el.k) {
+      el.k = key;
+      el.className = "dk-card" + (!!d.k === on ? " red" : "");
+      el.innerHTML = '<div class="dk-top"><span class="dk-ttl"></span>' + (d.b ? '<span class="dk-badge">ŞU AN</span>' : "") +
+        '<span class="dk-rng"></span></div><div class="dk-cd"><span></span><b></b></div>';
+      q("ttl").textContent = d.t;
+      q("rng").textContent = d.g(day);
+      q("cd").firstChild.textContent = d.c || "Kerahat vaktinin çıkmasına kalan süre";
+      q("cd").style.display = on ? "" : "none";
+      if (d.b) q("badge").style.display = on ? "" : "none";
+    }
+    if (on) q("cd b").textContent = hms(d.e(day) - s);
+  }
+
+  function tick() {
+    const t = getTodayData();
+    const next = t && state.times.find((x) => x.date.getTime() === t.date.getTime() + 864e5);
+    const T0 = t && toDay(t), T1 = next ? toDay(next) : T0;
+    if (!T0 || FIELDS.some((f) => isNaN(T0[f]) || isNaN(T1[f]))) { box.style.display = "none"; return; }
+    const s = nowSec();
+    LIST.forEach((d) => draw(d, s, T0, T1));
+    box.style.display = "flex";
+  }
+  tick();
+  setInterval(tick, 1000);
+})();
 </script>
 <script>
   if ("scrollRestoration" in history) history.scrollRestoration = "manual";

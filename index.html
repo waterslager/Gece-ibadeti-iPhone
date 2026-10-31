@@ -405,12 +405,13 @@
   .dk-box { display: flex; flex-direction: column; gap: 1mm; margin-bottom: 1mm; }
   .dk-box [hidden] { display: none; }
   .dk-card { border-radius: 10px; padding: 4px 8px 5px; background: #22c55e; color: #000; }
+  .dk-card.dk-k { background: #f97316; }
   .dk-card.red { background: #ef4444; color: #fff; }
   .dk-top { display: flex; align-items: center; gap: 6px; }
   .dk-ttl { font-size: 0.8rem; font-weight: 700; white-space: nowrap; }
-  .dk-badge { background: #000; color: #fff; border-radius: 999px; padding: 0 6px; font-size: 0.55rem; font-weight: 700; letter-spacing: 0.06em; white-space: nowrap; }
   .dk-rng { margin-left: auto; font-size: 1.25rem; font-weight: 700; line-height: 1.1; white-space: nowrap; font-variant-numeric: tabular-nums; }
   .dk-cd { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; background: rgba(0,0,0,0.3); color: #fff; border-radius: 6px; padding: 0 6px; margin-top: 2px; line-height: 1.25; }
+  .dk-card:not(.red) .dk-cd { background: #1e293b; }
   .dk-cd span { font-size: 0.52rem; }
   .dk-cd b { font-size: 0.8rem; font-variant-numeric: tabular-nums; }
 </style>
@@ -512,18 +513,18 @@
 
     <div class="dk-box">
       <div class="dk-card" id="dkDuha">
-        <div class="dk-top"><span class="dk-ttl">Duha (Kuşluk) Namazı Vakti</span><span class="dk-badge" hidden>ŞU AN</span><span class="dk-rng">--:--</span></div>
+        <div class="dk-top"><span class="dk-ttl">Duha (Kuşluk) Namazı Vakti</span><span class="dk-rng">--:--</span></div>
         <div class="dk-cd" hidden><span>Duha vaktinin çıkmasına kalan süre</span><b></b></div>
       </div>
-      <div class="dk-card" id="dkSabah">
+      <div class="dk-card dk-k" id="dkSabah">
         <div class="dk-top"><span class="dk-ttl">Sabah Kerahat Vakti Sonu</span><span class="dk-rng">--:--</span></div>
         <div class="dk-cd" hidden><span>Kerahat vaktinin çıkmasına kalan süre</span><b></b></div>
       </div>
-      <div class="dk-card" id="dkOgle">
+      <div class="dk-card dk-k" id="dkOgle">
         <div class="dk-top"><span class="dk-ttl">Öğle Kerahat Vakti Başlangıcı</span><span class="dk-rng">--:--</span></div>
         <div class="dk-cd" hidden><span>Kerahat vaktinin çıkmasına kalan süre</span><b></b></div>
       </div>
-      <div class="dk-card" id="dkIkindi">
+      <div class="dk-card dk-k" id="dkIkindi">
         <div class="dk-top"><span class="dk-ttl">İkindi Kerahat Vakti Başlangıcı</span><span class="dk-rng">--:--</span></div>
         <div class="dk-cd" hidden><span>Kerahat vaktinin çıkmasına kalan süre</span><b></b></div>
       </div>
@@ -1391,13 +1392,12 @@ function refreshDuhaKerahat() {
   const T0 = today && dkDay(today), T1 = (next && dkDay(next)) || T0;
   const now = Date.now();
   for (const c of DK_LIST) {
-    const el = $(c.id), rng = el.querySelector(".dk-rng"), cd = el.querySelector(".dk-cd"), badge = el.querySelector(".dk-badge");
+    const el = $(c.id), rng = el.querySelector(".dk-rng"), cd = el.querySelector(".dk-cd");
     const day = T0 && (now >= T0[c.u || "aksam"] ? T1 : T0);
     const on = !!day && now >= day[c.s] && now < day[c.e];
     el.classList.toggle("red", !!day && !!c.k === on);
     rng.textContent = day ? c.show.map((k) => fmt(new Date(day[k]))).join(" – ") : "--:--";
     cd.hidden = !on;
-    if (badge) badge.hidden = !on;
     if (on) cd.querySelector("b").textContent = formatRemain(day[c.e] - now);
   }
 }

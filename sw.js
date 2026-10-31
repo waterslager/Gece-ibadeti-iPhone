@@ -1,4 +1,4 @@
-const CACHE = "teheccud-v14";
+const CACHE = "teheccud-v15";
 const ASSETS = [
   "./",
   "./index.html",

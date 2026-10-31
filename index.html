@@ -166,7 +166,6 @@
     top: 11px;
     right: 15px;
     font-size: 20px;
-    filter: drop-shadow(0 0 6px rgba(0,230,118,0.5));
   }
   .card-icon.kabe-icon {
     font-size: 21px;
@@ -476,7 +475,7 @@
     </div>
 
     <div class="vakit-card sabah-card">
-      <div class="card-icon" style="filter: drop-shadow(0 0 6px rgba(255,120,80,0.5));">🌄</div>
+      <div class="card-icon">🌄</div>
       <div class="label">Farz Namaz</div>
       <div class="name">Sabah Namazı</div>
       <div class="time-row">
@@ -1177,7 +1176,7 @@ async function loadAndRender() {
             startCountdown();
             const fbEntry = readTimesCache(myLoc.ilceId);
             setDataMode("cache", fbEntry ? fbEntry.ts : Date.now());
-            setStatus("Çevrimdışı: kayıtlı vakitler gösteriliyor. Bağlantı gelince yenilenir. (" + msg.slice(0, 70) + ")", false);
+            setStatus("Bağlantı kurulamadı: telefona kaydedilen son vakitler gösteriliyor. Bağlantı gelince yenilenir. (" + msg.slice(0, 70) + ")", false);
             return;
           }
         }
@@ -1669,7 +1668,7 @@ window.addEventListener("online", resumeRefresh);
 window.addEventListener("offline", () => {
   if (!state.times) return;
   state.stale = true;
-  setStatus("Çevrimdışı: kayıtlı vakitler gösteriliyor. Bağlantı gelince yenilenir.", false);
+  setStatus("Çevrimdışı: ekrandaki vakitler son çekilen verilerdir. Bağlantı gelince yenilenir.", false);
 });
 window.addEventListener("pageshow", (e) => { if (e.persisted) resumeRefresh(); });
 

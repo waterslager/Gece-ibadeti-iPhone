@@ -402,7 +402,8 @@
   @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
   @media (prefers-reduced-motion: reduce) { .skeleton { animation: none; } }
 
-  .dk-box { display: none; flex-direction: column; gap: 1mm; margin-bottom: 1mm; }
+  .dk-box { display: flex; flex-direction: column; gap: 1mm; margin-bottom: 1mm; }
+  .dk-box [hidden] { display: none; }
   .dk-card { border-radius: 10px; padding: 4px 8px 5px; background: #22c55e; color: #000; }
   .dk-card.red { background: #ef4444; color: #fff; }
   .dk-top { display: flex; align-items: center; gap: 6px; }
@@ -509,7 +510,24 @@
       </div>
     </div>
 
-    <div class="dk-box" id="dkBox"></div>
+    <div class="dk-box">
+      <div class="dk-card" id="dkDuha">
+        <div class="dk-top"><span class="dk-ttl">Duha (Kuşluk) Namazı Vakti</span><span class="dk-badge" hidden>ŞU AN</span><span class="dk-rng">--:--</span></div>
+        <div class="dk-cd" hidden><span>Duha vaktinin çıkmasına kalan süre</span><b></b></div>
+      </div>
+      <div class="dk-card" id="dkSabah">
+        <div class="dk-top"><span class="dk-ttl">Sabah Kerahat Vakti Sonu</span><span class="dk-rng">--:--</span></div>
+        <div class="dk-cd" hidden><span>Kerahat vaktinin çıkmasına kalan süre</span><b></b></div>
+      </div>
+      <div class="dk-card" id="dkOgle">
+        <div class="dk-top"><span class="dk-ttl">Öğle Kerahat Vakti Başlangıcı</span><span class="dk-rng">--:--</span></div>
+        <div class="dk-cd" hidden><span>Kerahat vaktinin çıkmasına kalan süre</span><b></b></div>
+      </div>
+      <div class="dk-card" id="dkIkindi">
+        <div class="dk-top"><span class="dk-ttl">İkindi Kerahat Vakti Başlangıcı</span><span class="dk-rng">--:--</span></div>
+        <div class="dk-cd" hidden><span>Kerahat vaktinin çıkmasına kalan süre</span><b></b></div>
+      </div>
+    </div>
 
     <div class="vakit-table-card">
       <div class="card-icon kabe-icon">🕋</div>
@@ -1186,6 +1204,7 @@ async function loadAndRender() {
 
 function setLoading(on) {
   ["teheccudTime","arasiTime","seherTime","sabahTime","camiTime","imsakMiniTime","gunesMiniTime"].forEach(id => $(id).classList.toggle("skeleton", on));
+  document.querySelectorAll(".dk-rng").forEach(el => el.classList.toggle("skeleton", on));
   document.querySelectorAll("[data-key]").forEach(el => el.classList.toggle("skeleton", on));
 }
 
@@ -1196,6 +1215,7 @@ function clearDisplay() {
   document.querySelectorAll("[data-key]").forEach((el) => { el.textContent = "--:--"; });
   setT("dateLabel", "-"); setT("hijriLabel", "");
   lastGridDateKey = null;
+  refreshDuhaKerahat();
   setT("nextName", "—"); setT("nextTime", "--:--"); setT("nextRemain", "--:--:--");
   cachedNextEvent = null;
   setDataMode(null);
@@ -1210,6 +1230,7 @@ function render(period) {
   $("hijriLabel").textContent = imsakDay.hijri ? "Hicrî: " + imsakDay.hijri : "";
 
   refreshVakitList(true);
+  refreshDuhaKerahat();
 
   const d = calcDerived(period);
   if (d) {
@@ -1342,6 +1363,45 @@ function refreshVakitList(force) {
   highlightCurrentVakit(info);
 }
 
+/* Duha ve kerahat kartları (s/e: vaktin başı/sonu, u: bu andan sonra yarın gösterilir (varsayılan akşam),
+   show: görünen saat(ler), k: kerahat → vakit sürerken kırmızı; Duha'da tersi: vakit dışında kırmızı) */
+const DK_LIST = [
+  { id: "dkDuha",   s: "duha",    e: "duhaEnd",  u: "duhaEnd", show: ["duha", "duhaEnd"] },
+  { id: "dkSabah",  s: "gunes",   e: "sabahEnd", show: ["sabahEnd"], k: 1 },
+  { id: "dkOgle",   s: "ogleK",   e: "ogle",     show: ["ogleK"],    k: 1 },
+  { id: "dkIkindi", s: "ikindiK", e: "aksam",    show: ["ikindiK"],  k: 1 }
+];
+
+/* Duha başlangıcı = imsak + (akşam − imsak)/4; artık saniyeler dakikaya ileri yuvarlanır (8:19:15 → 8:20)
+   Sabah/ikindi kerahatı 50 dk., öğle kerahatı 30 dk. */
+function dkDay(d) {
+  const t = (k) => { const x = parseTime(d[k], d.date); return x && x.getTime(); };
+  const imsak = t("imsak"), gunes = t("gunes"), ogle = t("ogle"), aksam = t("aksam");
+  if (!imsak || !gunes || !ogle || !aksam) return null;
+  const ogleK = ogle - 30 * 60000;
+  return {
+    duha: ceilMin(new Date(imsak + (aksam - imsak) / 4)).getTime(), duhaEnd: ogleK,
+    gunes, sabahEnd: gunes + 50 * 60000, ogleK, ogle, ikindiK: aksam - 50 * 60000, aksam
+  };
+}
+
+function refreshDuhaKerahat() {
+  const today = getTodayData();
+  const next = today && state.times.find((x) => x.date.getTime() === today.date.getTime() + 864e5);
+  const T0 = today && dkDay(today), T1 = (next && dkDay(next)) || T0;
+  const now = Date.now();
+  for (const c of DK_LIST) {
+    const el = $(c.id), rng = el.querySelector(".dk-rng"), cd = el.querySelector(".dk-cd"), badge = el.querySelector(".dk-badge");
+    const day = T0 && (now >= T0[c.u || "aksam"] ? T1 : T0);
+    const on = !!day && now >= day[c.s] && now < day[c.e];
+    el.classList.toggle("red", !!day && !!c.k === on);
+    rng.textContent = day ? c.show.map((k) => fmt(new Date(day[k]))).join(" – ") : "--:--";
+    cd.hidden = !on;
+    if (badge) badge.hidden = !on;
+    if (on) cd.querySelector("b").textContent = formatRemain(day[c.e] - now);
+  }
+}
+
 function updateNextBar(next) {
   const nameEl = document.getElementById("nextName");
   const timeEl = document.getElementById("nextTime");
@@ -1351,6 +1411,7 @@ function updateNextBar(next) {
   timeEl.textContent = fmt(next.time);
   remainEl.textContent = formatRemain(next.time.getTime() - Date.now());
   refreshVakitList();
+  refreshDuhaKerahat();
 }
 
 function tickCountdown() {
@@ -1639,69 +1700,11 @@ window.addEventListener("pageshow", (e) => { if (e.persisted) resumeRefresh(); }
 init();
 
 if ("serviceWorker" in navigator) {
+  const hadController = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener("controllerchange", () => { if (hadController) location.reload(); });
   navigator.serviceWorker.register("sw.js", { updateViaCache: "none" })
     .catch((err) => console.warn("[SW] Kayıt başarısız:", err));
 }
-</script>
-<script>
-/* Duha ve kerahat kutuları: uygulamanın kendi vakit verisini (state.times) kullanır */
-(function () {
-  "use strict";
-  const K = 50 * 60, KO = 30 * 60;   // sabah/ikindi kerahat 50 dk., öğle kerahat 30 dk.
-  const FIELDS = ["imsak", "gunes", "ogle", "ikindi", "aksam"];
-
-  /* Duha başlangıcı = imsak + (akşam − imsak)/4; artık saniyeler dakikaya ileri yuvarlanır (8:19:15 → 8:20) */
-  const DS = (x) => Math.ceil((x.imsak + (x.aksam - x.imsak) / 4) / 60) * 60;
-  const OS = (x) => x.ogle - KO, SE = (x) => x.gunes + K, IS = (x) => x.aksam - K, AK = (x) => x.aksam;
-
-  /* t:başlık s/e:vaktin başı/sonu g:görünen metin u:bu andan sonra yarın gösterilir (varsayılan akşam)
-     c:sayaç etiketi b:"ŞU AN" rozeti k:kerahat (vakit sürerken kırmızı; Duha'da tersi: vakit dışında kırmızı) */
-  const LIST = [
-    { t: "Duha (Kuşluk) Namazı Vakti", s: DS, e: OS, u: OS, g: (x) => hm(DS(x)) + " – " + hm(OS(x)), c: "Duha vaktinin çıkmasına kalan süre", b: 1 },
-    { t: "Sabah Kerahat Vakti Sonu", s: (x) => x.gunes, e: SE, g: (x) => hm(SE(x)), k: 1 },
-    { t: "Öğle Kerahat Vakti Başlangıcı", s: OS, e: (x) => x.ogle, g: (x) => hm(OS(x)), k: 1 },
-    { t: "İkindi Kerahat Vakti Başlangıcı", s: IS, e: AK, g: (x) => hm(IS(x)), k: 1 }
-  ];
-
-  const box = document.getElementById("dkBox");
-  const CLOCK = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Istanbul", hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" });
-  const hm = (v) => pad(Math.floor(v / 3600) % 24) + ":" + pad(Math.floor(v % 3600 / 60));
-  const hms = (v) => { v = Math.max(0, v | 0); return pad(Math.floor(v / 3600)) + ":" + pad(Math.floor(v % 3600 / 60)) + ":" + pad(v % 60); };
-  const secOf = (v) => { const m = /^(\d{1,2}):(\d{2})/.exec(v); return m ? m[1] * 3600 + m[2] * 60 : NaN; };
-  const nowSec = () => { const p = CLOCK.formatToParts(new Date()); const g = (t) => +p.find((x) => x.type === t).value; return g("hour") % 24 * 3600 + g("minute") * 60 + g("second"); };
-  const toDay = (d) => { const o = { k: d.date.getTime() }; FIELDS.forEach((f) => { o[f] = secOf(d[f]); }); return o; };
-
-  LIST.forEach((d) => { d.el = document.createElement("div"); box.appendChild(d.el); });
-
-  function draw(d, s, T0, T1) {
-    const el = d.el, day = s >= (d.u || AK)(T0) ? T1 : T0, on = s >= d.s(day) && s < d.e(day);
-    const q = (c) => el.querySelector(".dk-" + c), key = [on, day.k].join();
-    if (key !== el.k) {
-      el.k = key;
-      el.className = "dk-card" + (!!d.k === on ? " red" : "");
-      el.innerHTML = '<div class="dk-top"><span class="dk-ttl"></span>' + (d.b ? '<span class="dk-badge">ŞU AN</span>' : "") +
-        '<span class="dk-rng"></span></div><div class="dk-cd"><span></span><b></b></div>';
-      q("ttl").textContent = d.t;
-      q("rng").textContent = d.g(day);
-      q("cd").firstChild.textContent = d.c || "Kerahat vaktinin çıkmasına kalan süre";
-      q("cd").style.display = on ? "" : "none";
-      if (d.b) q("badge").style.display = on ? "" : "none";
-    }
-    if (on) q("cd b").textContent = hms(d.e(day) - s);
-  }
-
-  function tick() {
-    const t = getTodayData();
-    const next = t && state.times.find((x) => x.date.getTime() === t.date.getTime() + 864e5);
-    const T0 = t && toDay(t), T1 = next ? toDay(next) : T0;
-    if (!T0 || FIELDS.some((f) => isNaN(T0[f]) || isNaN(T1[f]))) { box.style.display = "none"; return; }
-    const s = nowSec();
-    LIST.forEach((d) => draw(d, s, T0, T1));
-    box.style.display = "flex";
-  }
-  tick();
-  setInterval(tick, 1000);
-})();
 </script>
 <script>
   if ("scrollRestoration" in history) history.scrollRestoration = "manual";

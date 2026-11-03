@@ -405,14 +405,13 @@
   .dk-box [hidden] { display: none; }
   .dk-card { border-radius: 9px; padding: 2px 8px 3px; background: #22c55e; color: #000; }
   .dk-card.dk-k { background: #f97316; }
-  .dk-card.red { background: #ef4444; color: #fff; }
+  .dk-card.red { background: #ef4444; }
   .dk-top { display: flex; align-items: center; gap: 6px; }
   .dk-ttl { font-size: 0.75rem; font-weight: 700; white-space: nowrap; }
   .dk-rng { margin-left: auto; font-size: 1.1rem; font-weight: 700; line-height: 1.1; white-space: nowrap; font-variant-numeric: tabular-nums; }
-  .dk-cd { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; background: rgba(0,0,0,0.3); color: #fff; border-radius: 5px; padding: 0 6px; margin-top: 1px; line-height: 1.15; }
-  .dk-card:not(.red) .dk-cd { background: #dc2626; }
-  .dk-cd span { font-size: 0.5rem; }
-  .dk-cd b { font-size: 0.75rem; font-variant-numeric: tabular-nums; }
+  .dk-cd { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; background: #fff; color: #000; font-weight: 700; border-radius: 5px; padding: 0 6px; margin-top: 1px; line-height: 1.15; }
+  .dk-cd span { font-size: 0.62rem; }
+  .dk-cd b { font-size: 0.9rem; font-weight: 800; font-variant-numeric: tabular-nums; }
 </style>
 </head>
 <body>
@@ -1373,7 +1372,7 @@ const DK_LIST = [
 ];
 
 /* Duha başlangıcı = imsak + (akşam − imsak)/4; artık saniyeler dakikaya ileri yuvarlanır (8:19:15 → 8:20)
-   Sabah/ikindi kerahatı 50 dk., öğle kerahatı 30 dk. */
+   Sabah/ikindi kerahatı takvim saatinden 52 dk. (7 dk. temkin dahil; gerçek doğuş/batıştan en az 45 dk.), öğle kerahatı 30 dk. */
 function dkDay(d) {
   const t = (k) => { const x = parseTime(d[k], d.date); return x && x.getTime(); };
   const imsak = t("imsak"), gunes = t("gunes"), ogle = t("ogle"), aksam = t("aksam");
@@ -1381,7 +1380,7 @@ function dkDay(d) {
   const ogleK = ogle - 30 * 60000;
   return {
     duha: ceilMin(new Date(imsak + (aksam - imsak) / 4)).getTime(), duhaEnd: ogleK,
-    gunes, sabahEnd: gunes + 50 * 60000, ogleK, ogle, ikindiK: aksam - 50 * 60000, aksam
+    gunes, sabahEnd: gunes + 52 * 60000, ogleK, ogle, ikindiK: aksam - 52 * 60000, aksam
   };
 }
 

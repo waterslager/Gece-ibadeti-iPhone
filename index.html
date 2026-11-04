@@ -516,15 +516,12 @@
       </div>
       <div class="dk-card dk-k" id="dkSabah">
         <div class="dk-top"><span class="dk-ttl">Sabah Kerahat Vakti Sonu</span><span class="dk-rng">--:--</span></div>
-        <div class="dk-cd" hidden><span>Kerahat vaktinin çıkmasına kalan süre</span><b></b></div>
       </div>
       <div class="dk-card dk-k" id="dkOgle">
         <div class="dk-top"><span class="dk-ttl">Öğle Kerahat Vakti Başlangıcı</span><span class="dk-rng">--:--</span></div>
-        <div class="dk-cd" hidden><span>Kerahat vaktinin çıkmasına kalan süre</span><b></b></div>
       </div>
       <div class="dk-card dk-k" id="dkIkindi">
         <div class="dk-top"><span class="dk-ttl">İkindi Kerahat Vakti Başlangıcı</span><span class="dk-rng">--:--</span></div>
-        <div class="dk-cd" hidden><span>Kerahat vaktinin çıkmasına kalan süre</span><b></b></div>
       </div>
     </div>
 
@@ -1396,8 +1393,10 @@ function refreshDuhaKerahat() {
     const on = !!day && now >= day[c.s] && now < day[c.e];
     el.classList.toggle("red", !!day && !!c.k === on);
     rng.textContent = day ? c.show.map((k) => fmt(new Date(day[k]))).join(" – ") : "--:--";
-    cd.hidden = !on;
-    if (on) cd.querySelector("b").textContent = formatRemain(day[c.e] - now);
+    if (cd) {
+      cd.hidden = !on;
+      if (on) cd.querySelector("b").textContent = formatRemain(day[c.e] - now);
+    }
   }
 }
 

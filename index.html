@@ -350,13 +350,14 @@
   }
   .sabah-card .time { font-size: var(--num-size); }
   .sabah-card .cami-time { font-size: var(--num-size); }
-  .sabah-card .name { margin-bottom: 16px; }
+  .sabah-card .name { margin-bottom: 9px; }
+  .sabah-card.cami-imsak .time-row { visibility: hidden; }
   .offset-inline input[type=number]::-webkit-inner-spin-button,
   .offset-inline input[type=number]::-webkit-outer-spin-button { display: none; }
   .offset-inline input[type=number]:focus { border-color: rgba(201,164,90,0.6); }
 
   .cami-block {
-    margin-top: 16px;
+    margin-top: 6.2px;
     padding-top: 0;
     display: flex;
     justify-content: space-between;
@@ -381,7 +382,21 @@
     line-height: 1;
     text-shadow: 0 0 20px rgba(0,255,136,0.6), 0 0 40px rgba(0,255,136,0.3);
   }
-  .cami-block .desc { font-size: 9px; }
+  .cami-opt {
+    display: flex; align-items: center; gap: 6px; position: relative;
+    margin: 0; padding: 0; border: 0; background: none; cursor: pointer;
+    font: inherit; font-size: 10.5px; line-height: 1.4; color: var(--desc-blue); text-align: left;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .cami-opt::after { content: ""; position: absolute; inset: -3px -6px; }
+  .cami-chk {
+    position: relative; flex-shrink: 0; width: 13px; height: 13px; border-radius: 3px; background: #ef4444;
+  }
+  .cami-opt[aria-pressed="true"] .cami-chk { background: #22c55e; }
+  .cami-opt[aria-pressed="true"] .cami-chk::after {
+    content: ""; position: absolute; left: 4px; top: 1.5px; width: 3px; height: 6px;
+    border: solid #000; border-width: 0 2px 2px 0; transform: rotate(45deg);
+  }
 
   .imsak-gunes-mini { text-align: right; line-height: 1.2; flex-shrink: 0; }
   .imsak-gunes-mini .mini-block { margin-bottom: 4px; }
@@ -494,7 +509,8 @@
         <div class="cami-content">
           <div class="cami-label">Camide Farz Namazı Vakti</div>
           <div class="cami-time" id="camiTime">--:--</div>
-          <div class="desc">(Güneşten 30 dk önce)</div>
+          <button type="button" class="cami-opt" data-mode="gunes" aria-pressed="true"><span class="cami-chk"></span>(Güneşten 30 dk önce)</button>
+          <button type="button" class="cami-opt" data-mode="imsak" aria-pressed="false"><span class="cami-chk"></span>(İmsaktan 30 dk sonra)</button>
         </div>
         <div class="imsak-gunes-mini">
           <div class="mini-block">
@@ -565,6 +581,8 @@ if (/iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "Mac
 
 const STORAGE_KEY = "teheccud-seher.location.v2";
 const OFFSET_STORAGE_KEY = "teheccud-seher.sabahOffset.v1";
+const CAMI_MODE_KEY = "teheccud-seher.camiMode.v1";
+let camiMode = "gunes"; // "gunes": güneşten 30 dk önce · "imsak": imsaktan 30 dk sonra
 const CACHE_PREFIX = "teheccud-seher.cache.";
 
 const $ = (id) => document.getElementById(id);
@@ -1104,7 +1122,7 @@ function calcDerived(period) {
   const sabahOnce = getSabahOffset();
   const sabahRaw = sabahOnce ? new Date(gunes.getTime() - sabahOnce * 60 * 1000) : imsak;
   const sabah    = sabahRaw < imsak ? imsak : sabahRaw;
-  const cami     = new Date(gunes.getTime() - 30 * 60 * 1000);
+  const cami     = camiMode === "imsak" ? new Date(imsak.getTime() + 30 * 60 * 1000) : new Date(gunes.getTime() - 30 * 60 * 1000);
   return { teheccud, seher, sabah, cami, imsak, aksam, gunes };
 }
 
@@ -1444,12 +1462,25 @@ function tickCountdown() {
   updateNextBar(cachedNextEvent);
 }
 
+function setCamiMode(mode, save) {
+  camiMode = mode === "imsak" ? "imsak" : "gunes";
+  document.querySelector(".sabah-card").classList.toggle("cami-imsak", camiMode === "imsak");
+  document.querySelectorAll(".cami-opt").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.mode === camiMode)));
+  if (save) {
+    try { localStorage.setItem(CAMI_MODE_KEY, camiMode); } catch (e) { console.warn("[storage] yazılamadı:", e); }
+    const period = state.times && findActivePeriod(state.times);
+    if (period) render(period);
+  }
+}
+
 function cleanupLegacyStorage() {
   try { localStorage.removeItem("teheccud-seher.location.v1"); } catch (e) { console.warn("[storage] silinemedi:", e); }
 }
 
 async function init() {
   cleanupLegacyStorage();
+  try { setCamiMode(localStorage.getItem(CAMI_MODE_KEY)); } catch (e) { console.warn("[storage] okunamadı:", e); }
+  document.querySelectorAll(".cami-opt").forEach((b) => b.addEventListener("click", () => setCamiMode(b.dataset.mode, true)));
   $("ilSel").addEventListener("change", updateIlCityDisplay);
   $("ilSel").addEventListener("change", onIlChange);
   const offsetInput = document.getElementById("sabahOffset");

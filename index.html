@@ -421,6 +421,7 @@
   .dk-card { border-radius: 9px; padding: 2px 8px 3px; background: #22c55e; color: #000; }
   .dk-card.dk-k { background: #f97316; }
   .dk-card.red { background: #ef4444; }
+  #dkDuha.red { background: #fbd95e; }
   .dk-top { display: flex; align-items: center; gap: 6px; }
   .dk-ttl { font-size: 0.75rem; font-weight: 700; white-space: nowrap; }
   .dk-rng { margin-left: auto; font-size: 1.1rem; font-weight: 700; line-height: 1.1; white-space: nowrap; font-variant-numeric: tabular-nums; }
@@ -1379,7 +1380,7 @@ function refreshVakitList(force) {
 }
 
 /* Duha ve kerahat kartları (s/e: vaktin başı/sonu, u: bu andan sonra yarın gösterilir (varsayılan akşam),
-   show: görünen saat(ler), k: kerahat → vakit sürerken kırmızı; Duha'da tersi: vakit dışında kırmızı) */
+   show: görünen saat(ler), k: kerahat → vakit sürerken kırmızı; Duha'da tersi: vakit dışında sarı, vakit içinde yeşil) */
 const DK_LIST = [
   { id: "dkDuha",   s: "duha",    e: "duhaEnd",  u: "duhaEnd", show: ["duha", "duhaEnd"] },
   { id: "dkSabah",  s: "gunes",   e: "sabahEnd", show: ["sabahEnd"], k: 1 },

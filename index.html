@@ -262,38 +262,39 @@
     position: relative;
     margin-bottom: 1mm;
   }
-  .vakit-table-title { padding: 14px 16px 10px; }
+  .vakit-table-title { padding: 14px 24px 0; }
   .vtt-heading {
     display: flex;
     align-items: center;
-    gap: 7px;
+    gap: 5px;
     font-size: 12px;
     font-weight: 600;
-    letter-spacing: 1.8px;
+    letter-spacing: 1.2px;
     text-transform: uppercase;
     color: #ff4444;
-    margin-bottom: 5px;
+    margin-bottom: 3px;
   }
   .vtt-date { font-size: 11px; color: #64b5f6; }
-  .vtt-hijri { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .vtt-hijri { font-size: 10px; color: #a8b8d8; margin: 4px 0 6px; }
   .secondary {
     display: grid;
     grid-template-columns: repeat(6, 1fr);
-    gap: 0;
-    padding: 4px 8px;
+    gap: 1px 4px;
+    padding: 2px 24px 0;
   }
   .secondary .item.is-current { background: rgba(100, 181, 246, 0.10); box-shadow: inset 0 0 0 1px rgba(100, 181, 246, 0.55); }
   @media (max-width: 680px) { .secondary { grid-template-columns: repeat(3, 1fr); } }
-  .secondary .item { text-align: center; padding: 3px 6px; border-radius: 10px; }
+  .secondary .item { text-align: center; padding: 2px 4px; border-radius: 10px; }
   .secondary .item .nm {
     font-size: 8px;
+    font-weight: 900;
     color: #64b5f6;
     text-transform: uppercase;
     letter-spacing: 1px;
     margin-bottom: 2px;
   }
   .secondary .item .tm {
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
     color: #ffffff;
     font-variant-numeric: tabular-nums;
@@ -419,11 +420,12 @@
   .dk-box { display: flex; flex-direction: column; gap: 1mm; margin-bottom: 1mm; }
   .dk-box [hidden] { display: none; }
   .dk-card { border-radius: 9px; padding: 2px 8px 3px; background: #22c55e; color: #000; }
-  .dk-card.dk-k { background: #f97316; }
+  .dk-card.dk-k { position: relative; background: #f97316; }
   .dk-card.red { background: #ef4444; }
   #dkDuha.red { background: #fbd95e; }
   .dk-top { display: flex; align-items: center; gap: 6px; }
   .dk-ttl { font-size: 0.75rem; font-weight: 700; white-space: nowrap; }
+  .dk-no { position: absolute; left: max(69%, 206px); top: 50%; transform: translate(-50%, -50%); font-size: 1rem; line-height: 1; }
   .dk-rng { margin-left: auto; font-size: 1.1rem; font-weight: 700; line-height: 1.1; white-space: nowrap; font-variant-numeric: tabular-nums; }
   .dk-cd { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; background: #fff; color: #000; font-weight: 700; border-radius: 5px; padding: 0 6px; margin-top: 1px; line-height: 1.15; }
   .dk-cd span { font-size: 0.62rem; }
@@ -532,13 +534,13 @@
         <div class="dk-cd" hidden><span>Duha vaktinin çıkmasına kalan süre</span><b></b></div>
       </div>
       <div class="dk-card dk-k" id="dkSabah">
-        <div class="dk-top"><span class="dk-ttl">Sabah Kerahat Vakti Sonu</span><span class="dk-rng">--:--</span></div>
+        <div class="dk-top"><span class="dk-ttl">Sabah Kerahat Vakti Sonu</span><span class="dk-no" aria-hidden="true" hidden>⛔</span><span class="dk-rng">--:--</span></div>
       </div>
       <div class="dk-card dk-k" id="dkOgle">
-        <div class="dk-top"><span class="dk-ttl">Öğle Kerahat Vakti Başlangıcı</span><span class="dk-rng">--:--</span></div>
+        <div class="dk-top"><span class="dk-ttl">Öğle Kerahat Vakti Başlangıcı</span><span class="dk-no" aria-hidden="true" hidden>⛔</span><span class="dk-rng">--:--</span></div>
       </div>
       <div class="dk-card dk-k" id="dkIkindi">
-        <div class="dk-top"><span class="dk-ttl">İkindi Kerahat Vakti Başlangıcı</span><span class="dk-rng">--:--</span></div>
+        <div class="dk-top"><span class="dk-ttl">İkindi Kerahat Vakti Başlangıcı</span><span class="dk-no" aria-hidden="true" hidden>⛔</span><span class="dk-rng">--:--</span></div>
       </div>
     </div>
 
@@ -1411,6 +1413,7 @@ function refreshDuhaKerahat() {
     const day = T0 && (now >= T0[c.u || "aksam"] ? T1 : T0);
     const on = !!day && now >= day[c.s] && now < day[c.e];
     el.classList.toggle("red", !!day && !!c.k === on);
+    if (c.k) el.querySelector(".dk-no").hidden = !on;
     rng.textContent = day ? c.show.map((k) => fmt(new Date(day[k]))).join(" – ") : "--:--";
     if (cd) {
       cd.hidden = !on;

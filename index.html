@@ -1,0 +1,1757 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="theme-color" content="#1c2a56">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Teheccüd · Seher · Sabah Namazı Vakitleri</title>
+
+<meta name="description" content="Diyanet İşleri Başkanlığı verilerine dayalı Teheccüd, Seher ve Sabah Namazı vakitleri.">
+<meta name="color-scheme" content="dark">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://ezanvakti.imsakiyem.com https://ezanvakti.emushaf.net https://api.aladhan.com; object-src 'none'; base-uri 'none'; form-action 'self';">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="512.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Teheccüd">
+
+<style>
+  :root {
+    --bg-1: #1c2a56;
+    --bg-2: #2a4180;
+    --text: #f4f5fb;
+    --muted: #9aa3c4;
+    --desc-blue: #6b97e0;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    min-height: 100%;
+    background:
+      radial-gradient(1200px 800px at 80% -10%, #35509a 0%, transparent 60%),
+      radial-gradient(800px 600px at -10% 110%, #24356e 0%, transparent 60%),
+      linear-gradient(180deg, var(--bg-1) 0%, var(--bg-2) 60%, var(--bg-1) 100%);
+    color: var(--text);
+    font-family: "Times New Roman", Times, serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    padding: 8px 20px 64px;
+    padding-top: max(8px, env(safe-area-inset-top, 0px));
+    display: flex;
+    justify-content: center;
+    overscroll-behavior-y: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .status-bar-fill {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: env(safe-area-inset-top, 0px);
+    background: var(--bg-1);
+    z-index: 1000;
+  }
+  .container { width: 100%; max-width: 900px; display: flex; flex-direction: column; }
+
+  header { text-align: center; padding: 0; margin-bottom: 1mm; }
+  header .tevhid {
+    font-size: clamp(12px, 2vw, 18px);
+    color: #00ff88;
+    font-family: "Scheherazade New", "Traditional Arabic", serif;
+    line-height: 1.4;
+    letter-spacing: 1.5px;
+    margin-bottom: 2px;
+    text-shadow: 0 0 10px rgba(0,255,136,0.6);
+  }
+  header h1 {
+    font-size: clamp(20px, 2.8vw, 28px);
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    margin-top: 0;
+    margin-bottom: 0;
+    color: #ffffff;
+    white-space: nowrap;
+  }
+
+  .il-card {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 3px 14px;
+    background: #fbd95e;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 12px;
+    font-size: 11px;
+    gap: 6px;
+    white-space: nowrap;
+    overflow: hidden;
+    margin-bottom: 1mm;
+  }
+  .il-card .il-label { color: #e11d1d; font-weight: 700; flex-shrink: 0; }
+  .il-card .il-city { color: #000000; font-weight: 700; overflow: hidden; text-overflow: ellipsis; }
+  .il-card select {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    margin: 0;
+    border: none;
+    background: transparent;
+    color: transparent;
+    opacity: 0;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+  }
+
+  .il-card.src-card { background: #ffffff; }
+  .il-card.src-card .il-label { font-size: 9.5px; }
+
+  .date-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 3px 14px;
+    background: #ff7a00;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 12px;
+    font-size: 11px;
+    gap: 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    margin-bottom: 1mm;
+  }
+  .date-bar .left { color: #000000; font-weight: 700; overflow: hidden; text-overflow: ellipsis; }
+  .date-bar .hijri { color: #000000; font-weight: 700; font-size: 11px; flex-shrink: 0; }
+
+  .next-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 3px 14px;
+    background: #22c55e;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 10px;
+    font-size: 11px;
+    gap: 10px;
+    white-space: nowrap;
+    overflow: hidden;
+    margin-bottom: 1mm;
+  }
+  .next-bar .next-info { color: #000000; font-weight: 700; overflow: hidden; text-overflow: ellipsis; }
+  .next-bar .next-info #nextTime, .next-bar .next-info #nextRaw { font-size: 16px; }
+  .next-bar .next-info #nextRaw { margin-left: 2px; color: #991b1b; }
+  .next-bar .next-remain { color: #000000; font-weight: 700; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+  .next-bar .next-remain #nextRemain { font-size: 16px; }
+
+  .featured { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1mm; margin-bottom: 1mm; }
+  @media (max-width: 680px) { .featured { grid-template-columns: 1fr; } }
+
+  .vakit-card {
+    background: #000000;
+    border: 1px solid #222222;
+    border-radius: 18px;
+    padding: 15px 18px;
+    position: relative;
+  }
+  .card-icon {
+    position: absolute;
+    top: 11px;
+    right: 15px;
+    font-size: 20px;
+  }
+  .card-icon.kabe-icon {
+    font-size: 21px;
+    filter: grayscale(1) brightness(0.55) contrast(1.3);
+  }
+  .vakit-card .label {
+    font-size: 10px;
+    text-transform: none;
+    letter-spacing: 0.6px;
+    color: #fde047;
+    margin-bottom: 4px;
+    font-weight: 600;
+  }
+  .vakit-card .name {
+    font-size: 16px;
+    font-weight: 600;
+    color: #ff4444;
+    margin-bottom: 3px;
+  }
+  #seherCard .name {
+    color: #00e676;
+    text-shadow: 0 0 12px rgba(0,230,118,0.4);
+  }
+  .vakit-card .time {
+    font-size: 29px;
+    font-weight: 700;
+    color: #64b5f6;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 1px;
+    margin-bottom: 3px;
+  }
+  #seherTime {
+    color: #00e676;
+    text-shadow: 0 0 18px rgba(0,230,118,0.55), 0 0 4px rgba(0,230,118,0.2);
+  }
+  #sabahTime { color: #ff7a00; text-shadow: 0 0 10px rgba(255,122,0,0.5); }
+  #teheccudTime { color: #00bfff; text-shadow: 0 0 10px rgba(0,191,255,0.5); }
+  #arasiTime { color: #00bfff; text-shadow: 0 0 10px rgba(0,191,255,0.5); }
+  .vakit-card .desc {
+    font-size: 9px;
+    color: var(--desc-blue);
+    line-height: 1.4;
+  }
+
+  .data-badge {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    margin: 0 0 12px; padding: 6px 12px; border-radius: 999px;
+    font-size: 0.78rem; color: var(--muted, #94a3b8);
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+  }
+  .data-badge::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #22c55e; flex: none; }
+
+  .data-badge.cache::before { background: #f59e0b; }
+
+  .data-badge.hidden { display: none; }
+
+  .status {
+    text-align: center;
+    padding: 12px;
+    color: var(--muted);
+    font-size: 13px;
+    margin-bottom: 1mm;
+  }
+  .status.error {
+    color: #ffb4b4;
+    background: rgba(255, 100, 100, 0.08);
+    border: 1px solid rgba(255, 100, 100, 0.25);
+    border-radius: 10px;
+  }
+  .status.hidden { display: none; }
+
+  .footer {
+    text-align: center;
+    font-size: 10px;
+    color: #8aa3d6;
+    line-height: 1.35;
+    padding: 0 12px;
+  }
+  .footer .org { color: #fde047; font-weight: 500; }
+  .footer .src { color: #64b5f6; font-weight: 700; }
+
+  .vakit-table-card {
+    background: #16224a;
+    border: 1px solid rgba(255,255,255,0.14);
+    border-radius: 20px;
+    overflow: hidden;
+    padding-bottom: 6px;
+    position: relative;
+    margin-bottom: 1mm;
+  }
+  .vakit-table-title { padding: 14px 24px 0; }
+  .vtt-heading {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: #ff4444;
+    margin-bottom: 3px;
+  }
+  .vtt-date { font-size: 11px; color: #64b5f6; }
+  .vtt-hijri { font-size: 10px; color: #a8b8d8; margin: 4px 0 6px; }
+  .secondary {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 1px 4px;
+    padding: 2px 24px 0;
+  }
+  .secondary .item.is-current { background: rgba(100, 181, 246, 0.10); box-shadow: inset 0 0 0 1px rgba(100, 181, 246, 0.55); }
+  @media (max-width: 680px) { .secondary { grid-template-columns: repeat(3, 1fr); } }
+  .secondary .item { text-align: center; padding: 2px 4px; border-radius: 10px; }
+  .secondary .item .nm {
+    font-size: 8px;
+    font-weight: 900;
+    color: #64b5f6;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 2px;
+  }
+  .secondary .item .tm {
+    font-size: 12px;
+    font-weight: 600;
+    color: #ffffff;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .time-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    border: 2px solid #ff7a00;
+    border-radius: 12px;
+    padding: 8px 12px;
+    margin-bottom: 0;
+  }
+  .time-row .time { margin-bottom: 0; }
+  .offset-title-group { display: grid; grid-template-rows: auto auto; gap: 1px; }
+  .offset-title { font-size: 8.5px; line-height: 1.2; margin: 0; padding: 0; color: #fde047; font-weight: 600; white-space: nowrap; }
+  .offset-inline { display: flex; align-items: center; line-height: 1.2; gap: 5px; }
+  .offset-inline label { font-size: 8px; color: var(--desc-blue); white-space: nowrap; }
+  .offset-inline input[type=number] {
+    width: 23.5px;
+    height: 16px;
+    background: #ff7a00;
+    border: none;
+    color: #000000;
+    padding: 0;
+    border-radius: 4px;
+    font-size: 11.5px;
+    font-weight: 900;
+    text-align: center;
+    outline: none;
+    font-family: Georgia, serif;
+    line-height: 1;
+    appearance: textfield;
+    transition: border-color 0.2s;
+  }
+
+  .sabah-card {
+    padding: 18px;
+    border-radius: 20px;
+    margin-bottom: 1mm;
+    --num-size: 29px;
+  }
+  .sabah-card .time-title-group { display: grid; grid-template-rows: auto auto; gap: 1px; }
+  .sabah-card .time-title {
+    font-size: 8.5px;
+    line-height: 1.2;
+    margin: 0;
+    padding: 0;
+    color: #fde047;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .sabah-card .time { font-size: var(--num-size); }
+  .sabah-card .cami-time { font-size: var(--num-size); }
+  .sabah-card .name { margin-bottom: 9px; }
+  .sabah-card.cami-imsak .time-row { visibility: hidden; }
+  .offset-inline input[type=number]::-webkit-inner-spin-button,
+  .offset-inline input[type=number]::-webkit-outer-spin-button { display: none; }
+  .offset-inline input[type=number]:focus { border-color: rgba(201,164,90,0.6); }
+
+  .cami-block {
+    margin-top: 6.2px;
+    padding-top: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+  }
+  .cami-block .cami-label {
+    font-size: 10px;
+    letter-spacing: 0.3px;
+    text-transform: none;
+    color: #00ff88;
+    margin-bottom: 3px;
+    font-weight: 700;
+    white-space: nowrap;
+    text-shadow: 0 0 12px rgba(0,255,136,0.5);
+  }
+  .cami-block .cami-time {
+    font-weight: 700;
+    color: #00ff88;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 1px;
+    line-height: 1;
+    text-shadow: 0 0 20px rgba(0,255,136,0.6), 0 0 40px rgba(0,255,136,0.3);
+  }
+  .cami-opt {
+    display: flex; align-items: center; gap: 6px; position: relative;
+    margin: 0; padding: 0; border: 0; background: none; cursor: pointer;
+    font: inherit; font-size: 10.5px; line-height: 1.4; color: var(--desc-blue); text-align: left;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .cami-opt::after { content: ""; position: absolute; inset: -3px -6px; }
+  .cami-chk {
+    position: relative; flex-shrink: 0; width: 13px; height: 13px; border-radius: 3px; background: #ef4444;
+  }
+  .cami-opt[aria-pressed="true"] .cami-chk { background: #22c55e; }
+  .cami-opt[aria-pressed="true"] .cami-chk::after {
+    content: ""; position: absolute; left: 4px; top: 1.5px; width: 3px; height: 6px;
+    border: solid #000; border-width: 0 2px 2px 0; transform: rotate(45deg);
+  }
+
+  .imsak-gunes-mini { text-align: right; line-height: 1.2; flex-shrink: 0; }
+  .imsak-gunes-mini .mini-block { margin-bottom: 4px; }
+  .imsak-gunes-mini .mini-block:last-child { margin-bottom: 0; }
+  .imsak-gunes-mini .mini-label,
+  .imsak-gunes-mini .mini-time { font-size: 9px; font-weight: 600; }
+  .imsak-gunes-mini .imsak-color { color: #00e676; }
+  .imsak-gunes-mini .gunes-color { color: #ff4444; }
+
+  .skeleton {
+    background: linear-gradient(90deg, rgba(255,255,255,0.04), rgba(255,255,255,0.10), rgba(255,255,255,0.04));
+    background-size: 200% 100%;
+    animation: shimmer 1.4s infinite;
+    border-radius: 6px;
+    color: transparent !important;
+  }
+  @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+  @media (prefers-reduced-motion: reduce) { .skeleton { animation: none; } }
+
+  .dk-box { display: flex; flex-direction: column; gap: 1mm; margin-bottom: 1mm; }
+  .dk-box [hidden] { display: none; }
+  .dk-card { border-radius: 9px; padding: 2px 8px 3px; background: #22c55e; color: #000; }
+  .dk-card.dk-k { position: relative; background: #f97316; }
+  .dk-card.red { background: #ef4444; }
+  #dkDuha.red { background: #fbd95e; }
+  .dk-top { display: flex; align-items: center; gap: 6px; }
+  .dk-ttl { font-size: 0.75rem; font-weight: 700; white-space: nowrap; }
+  .dk-no { position: absolute; left: max(69%, 206px); top: 50%; transform: translate(-50%, -50%); font-size: 1rem; line-height: 1; }
+  .dk-rng { margin-left: auto; font-size: 1.1rem; font-weight: 700; line-height: 1.1; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .dk-cd { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; background: #fff; color: #000; font-weight: 700; border-radius: 5px; padding: 0 6px; margin-top: 1px; line-height: 1.15; }
+  .dk-cd span { font-size: 0.62rem; }
+  .dk-cd b { font-size: 0.9rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+  <div class="status-bar-fill"></div>
+  <div class="container">
+    <header>
+      <div class="tevhid" dir="rtl" lang="ar">لَا إِلَٰهَ إِلَّا اللَّهُ مُحَمَّدٌ رَسُولُ اللَّهِ</div>
+
+      <h1>Teheccüd ve Sabah Namazı Vakitleri</h1>
+    </header>
+
+    <div class="il-card">
+      <span class="il-label">İL</span>
+      <span class="il-city" id="ilCityDisplay" aria-live="polite">Şehir seçin...</span>
+      <select id="ilSel" aria-label="İl seçimi"><option>Yükleniyor…</option></select>
+    </div>
+
+    <div class="il-card src-card">
+      <span class="il-label">Veri kaynağı seç</span>
+      <span class="il-city" id="srcDisplay" aria-live="polite">ezanvakti.imsakiyem.com</span>
+      <select id="sourceSel" aria-label="Veri kaynağı seçimi">
+        <option value="imsakiyem" selected>ezanvakti.imsakiyem.com</option>
+        <option value="emushaf">mushaf (ezanvakti.emushaf.net)</option>
+        <option value="aladhan">api.aladhan.com</option>
+      </select>
+    </div>
+
+    <div class="date-bar">
+      <div class="left" id="dateLabel">—</div>
+      <div class="hijri" id="hijriLabel"></div>
+    </div>
+
+    <div class="next-bar" id="nextBar">
+      <span class="next-info"><span id="nextName">—</span> <span id="nextTime">--:--</span><span id="nextRaw"></span></span>
+      <span class="next-remain">Kalan Süre: <span id="nextRemain" role="timer" aria-live="off">--:--:--</span></span>
+    </div>
+
+    <div class="featured">
+      <div class="vakit-card">
+        <div class="card-icon"><img src="data:image/png;base64,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" width="24" height="24" alt="" style="display:block;"></div>
+        <div class="label">Salâtü'l-Leyl</div>
+        <div class="name">Teheccüd Vakti</div>
+        <div class="time" id="teheccudTime">--:--</div>
+        <div class="desc">Gecenin son 1/3'ü — İmsâk'a kadar</div>
+      </div>
+      <div class="vakit-card">
+        <div class="card-icon"><img src="data:image/png;base64,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" width="30" height="29" alt="" style="display:block;"></div>
+        <div class="label">Kıyâmü'l-Leyl</div>
+        <div class="name">Teheccüd-Seher Arası</div>
+        <div class="time" id="arasiTime">--:--</div>
+        <div class="desc">Teheccüd ile Seher'in tam ortası</div>
+      </div>
+      <div class="vakit-card" id="seherCard">
+        <div class="card-icon">🌙</div>
+        <div class="label">İstiğfar Duâ Zikir</div>
+        <div class="name">Seher Vakti</div>
+        <div class="time" id="seherTime">--:--</div>
+        <div class="desc">Gecenin son 1/6'sı — İmsâk'a kadar</div>
+      </div>
+    </div>
+
+    <div class="vakit-card sabah-card">
+      <div class="card-icon">🌄</div>
+      <div class="label">Farz Namaz</div>
+      <div class="name">Sabah Namazı</div>
+      <div class="time-row">
+        <div class="time-title-group">
+          <div class="time-title">Uyanma ve hazırlık saati</div>
+          <div class="time" id="sabahTime">--:--</div>
+        </div>
+        <div class="offset-title-group">
+          <div class="offset-title">Süre Ayarla</div>
+          <div class="offset-inline">
+            <label for="sabahOffset">Güneşten önce (dk):</label>
+            <input type="number" id="sabahOffset" min="1" inputmode="numeric" />
+          </div>
+        </div>
+      </div>
+      <div class="cami-block">
+        <div class="cami-content">
+          <div class="cami-label">Camide Farz Namazı Vakti</div>
+          <div class="cami-time" id="camiTime">--:--</div>
+          <button type="button" class="cami-opt" data-mode="gunes" aria-pressed="true"><span class="cami-chk"></span>(Güneşten 30 dk önce)</button>
+          <button type="button" class="cami-opt" data-mode="imsak" aria-pressed="false"><span class="cami-chk"></span>(İmsaktan 30 dk sonra)</button>
+        </div>
+        <div class="imsak-gunes-mini">
+          <div class="mini-block">
+            <div class="mini-label imsak-color">İmsak</div>
+            <div class="mini-time imsak-color" id="imsakMiniTime">--:--</div>
+          </div>
+          <div class="mini-block">
+            <div class="mini-label gunes-color">Güneş</div>
+            <div class="mini-time gunes-color" id="gunesMiniTime">--:--</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dk-box">
+      <div class="dk-card" id="dkDuha">
+        <div class="dk-top"><span class="dk-ttl">Duha (Kuşluk) Namazı Vakti</span><span class="dk-rng">--:--</span></div>
+        <div class="dk-cd" hidden><span>Duha vaktinin çıkmasına kalan süre</span><b></b></div>
+      </div>
+      <div class="dk-card dk-k" id="dkSabah">
+        <div class="dk-top"><span class="dk-ttl">Sabah Kerahat Vakti Sonu</span><span class="dk-no" aria-hidden="true" hidden>⛔</span><span class="dk-rng">--:--</span></div>
+      </div>
+      <div class="dk-card dk-k" id="dkOgle">
+        <div class="dk-top"><span class="dk-ttl">Öğle Kerahat Vakti Başlangıcı</span><span class="dk-no" aria-hidden="true" hidden>⛔</span><span class="dk-rng">--:--</span></div>
+      </div>
+      <div class="dk-card dk-k" id="dkIkindi">
+        <div class="dk-top"><span class="dk-ttl">İkindi Kerahat Vakti Başlangıcı</span><span class="dk-no" aria-hidden="true" hidden>⛔</span><span class="dk-rng">--:--</span></div>
+      </div>
+    </div>
+
+    <div class="vakit-table-card">
+      <div class="card-icon kabe-icon">🕋</div>
+      <div class="vakit-table-title">
+        <div class="vtt-heading">📿 <span>Namaz Vakitleri</span></div>
+        <div class="vtt-date" id="vakitTableTitle">—</div>
+        <div class="vtt-hijri" id="vakitTableHijri"></div>
+      </div>
+      <div class="secondary" id="otherTimes">
+        <div class="item"><div class="nm">İmsâk</div><div class="tm" data-key="imsak">--:--</div></div>
+        <div class="item"><div class="nm">Güneş</div><div class="tm" data-key="gunes">--:--</div></div>
+        <div class="item"><div class="nm">Öğle</div><div class="tm" data-key="ogle">--:--</div></div>
+        <div class="item"><div class="nm">İkindi</div><div class="tm" data-key="ikindi">--:--</div></div>
+        <div class="item"><div class="nm">Akşam</div><div class="tm" data-key="aksam">--:--</div></div>
+        <div class="item"><div class="nm">Yatsı</div><div class="tm" data-key="yatsi">--:--</div></div>
+      </div>
+    </div>
+
+    <div id="dataBadge" class="data-badge hidden" role="status" aria-live="polite"></div>
+
+    <div class="status hidden" id="status" role="status" aria-live="polite"></div>
+
+    <footer class="footer">
+      Veri kaynağı: <span class="org" id="srcNote">Diyanet İşleri Başkanlığı</span><br>
+      (<span class="src" id="srcDomain">ezanvakti.imsakiyem.com</span>).<br>
+      Her açılışta otomatik güncellenir.
+    </footer>
+  </div>
+
+<script>
+"use strict";
+
+// iPhone'da 16 px'ten küçük yazılı kutuya (dakika kutusu) dokununca sayfa büyüyüp kayıyor; yalnız iOS'ta kapatılır.
+// iOS bu ayarda iki parmakla büyütmeye yine izin verir. Android'e dokunulmaz.
+if (/iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)) {
+  const vp = document.querySelector('meta[name="viewport"]');
+  if (vp) vp.content += ", maximum-scale=1";
+}
+
+const STORAGE_KEY = "teheccud-seher.location.v2";
+const OFFSET_STORAGE_KEY = "teheccud-seher.sabahOffset.v1";
+const CAMI_MODE_KEY = "teheccud-seher.camiMode.v1";
+let camiMode = "gunes"; // "gunes": güneşten 30 dk önce · "imsak": imsaktan 30 dk sonra
+const CACHE_PREFIX = "teheccud-seher.cache.";
+
+const $ = (id) => document.getElementById(id);
+const statusEl = $("status");
+const ilCityDisplay = $("ilCityDisplay");
+const stateSelect = $("ilSel");
+const sourceSelect = $("sourceSel");
+const srcDisplay = $("srcDisplay");
+function updateIlCityDisplay() {
+  const sel = $("ilSel");
+  const opt = sel.options[sel.selectedIndex];
+  ilCityDisplay.textContent = (opt && opt.value) ? opt.textContent : "Şehir seçin...";
+}
+
+let state = {
+  location: null,
+  times: null,
+  countdownTimer: null,
+  requestId: 0,
+  abortController: null,
+  timesIlceId: null,
+  timesSource: null,
+  stale: false,
+  dataMode: null
+};
+
+let lastRenderedImsakDate = null;
+let retryPending = false;
+let retryCount = 0;
+let cachedNextEvent = null;
+let lastScanAt = 0;
+
+const TIMES_CACHE_KEY = "lastTimes";
+const TIMES_COLS = ["imsak", "gunes", "ogle", "ikindi", "aksam", "yatsi"];
+function cacheGetEntry(key) {
+  try {
+    const raw = localStorage.getItem(CACHE_PREFIX + key);
+    if (!raw) return null;
+    const obj = JSON.parse(raw);
+    return obj && typeof obj.ts === "number" ? obj : null;
+  } catch (e) { console.warn("[storage] okunamadı:", e); return null; }
+}
+function timeEntryValid(t) {
+  return !!t && t.date instanceof Date && !isNaN(t.date.getTime()) &&
+    TIMES_COLS.every((k) => typeof t[k] === "string" && /^\d{2}:\d{2}$/.test(t[k]));
+}
+function readTimesCache(ilceId) {
+  const e = cacheGetEntry(TIMES_CACHE_KEY);
+  const c = e && e.data;
+  if (!c || c.ilceId !== ilceId || !Array.isArray(c.times) || !c.times.length) return null;
+  const times = c.times.map((t) => ({ ...t, date: new Date(t.date) })).filter(timeEntryValid);
+  return times.length ? { times, ts: e.ts } : null;
+}
+function loadTimesCache(ilceId) {
+  const r = readTimesCache(ilceId);
+  return r ? r.times : null;
+}
+function saveTimesCache(ilceId, newTimes) {
+  const old = readTimesCache(ilceId);
+  const map = new Map();
+  if (old) old.times.forEach((t) => map.set(t.date.getTime(), t));
+  newTimes.forEach((t) => { if (timeEntryValid(t)) map.set(t.date.getTime(), t); });
+  // Geçmişten yalnızca son 2 gün tutulur (gece yarısından sonra dünün akşam vakti gerekir); eskisi silinir.
+  const cutoff = Date.now() - 2 * 86400000;
+  const merged = [...map.values()].filter((t) => t.date.getTime() >= cutoff).sort((a, b) => a.date - b.date);
+  if (!merged.length) return;
+  cacheSet(TIMES_CACHE_KEY, { ilceId, times: merged.map((t) => ({ ...t, date: t.date.getTime() })) });
+}
+
+const dataBadge = document.getElementById("dataBadge");
+function setDataMode(mode, ts) {
+  state.dataMode = mode;
+  if (!dataBadge) return;
+  if (!mode) { dataBadge.classList.add("hidden"); dataBadge.textContent = ""; return; }
+  const d = new Date(ts || Date.now());
+  if (mode !== "last") state.dataAt = d.getTime();
+  const tz = { timeZone: "Europe/Istanbul" };
+  const time = d.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit", ...tz });
+  const day = d.toLocaleDateString("tr-TR", { day: "numeric", month: "short", ...tz });
+  dataBadge.textContent = mode === "live"
+    ? "Canlı veri · " + time + " itibarıyla"
+    : (mode === "last" ? "Son veri · " : "Kayıtlı veri · ") + day + " " + time + " itibarıyla";
+  dataBadge.classList.toggle("cache", mode !== "live");
+  dataBadge.classList.remove("hidden");
+}
+
+let extendRunning = false;
+let lastExtendTry = 0;
+async function extendTimesCache(ilceId) {
+  if (extendRunning || Date.now() - lastExtendTry < 600000) return;
+  const p = getIstanbulParts();
+  const todayMs = Date.UTC(p.year, p.month - 1, p.day);
+  const cached = readTimesCache(ilceId);
+  const lastMs = cached ? Math.max(...cached.times.map((t) => t.date.getTime())) : 0;
+  if (lastMs - todayMs >= 25 * 86400000) return;
+  extendRunning = true;
+  lastExtendTry = Date.now();
+  try {
+    for (const span of [30, 14, 7]) {
+      try {
+        const ext = await getVakitlerImsakiyem(ilceId, undefined, 0, span, 30000);
+        if (!state.location || state.location.ilceId !== ilceId) return;
+        saveTimesCache(ilceId, ext);
+        return;
+      } catch (e) {
+        const m = String((e && e.message) || e).match(/API hatası: (\d+)/);
+        const code = m ? Number(m[1]) : 0;
+        if (!(code >= 400 && code < 500 && code !== 408 && code !== 429)) return;
+      }
+    }
+  } finally { extendRunning = false; }
+}
+
+function setStatus(msg, isError) {
+  statusEl.textContent = msg || "";
+  statusEl.classList.toggle("error", !!isError);
+  statusEl.classList.toggle("hidden", !msg);
+}
+
+function pad(n) { return n < 10 ? "0" + n : "" + n; }
+
+function clearChildren(node) {
+  while (node.firstChild) node.removeChild(node.firstChild);
+}
+
+function makeOption(value, label, dataAd, opts) {
+  const o = document.createElement("option");
+  o.value = value;
+  o.textContent = label;
+  if (dataAd !== undefined) o.dataset.ad = dataAd;
+  if (opts) {
+    if (opts.disabled) o.disabled = true;
+    if (opts.selected) o.selected = true;
+  }
+  return o;
+}
+
+function loadSaved() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (e) { console.warn("[storage] okunamadı:", e); }
+  return null;
+}
+
+function saveLocation(loc) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(loc)); } catch (e) { console.warn("[storage] yazılamadı:", e); }
+}
+
+function cacheGet(key) {
+  try {
+    const raw = localStorage.getItem(CACHE_PREFIX + key);
+    if (!raw) return null;
+    const obj = JSON.parse(raw);
+    if (Date.now() - obj.ts > 7 * 86400 * 1000) return null;
+    return obj.data;
+  } catch (e) { console.warn("[storage] okunamadı:", e); return null; }
+}
+
+function cacheSet(key, data) {
+  try { localStorage.setItem(CACHE_PREFIX + key, JSON.stringify({ ts: Date.now(), data })); } catch (e) { console.warn("[storage] yazılamadı:", e); }
+}
+
+const API_BASE = "https://ezanvakti.imsakiyem.com/api";
+const EMUSHAF_BASE = "https://ezanvakti.emushaf.net";
+const ALADHAN_BASE = "https://api.aladhan.com/v1";
+
+let source = "imsakiyem";
+const SOURCE_TIMEOUT_MS = 6000;
+const SOURCE_INFO = {
+  imsakiyem: { note: "Diyanet İşleri Başkanlığı", domain: "ezanvakti.imsakiyem.com" },
+  emushaf:   { note: "Diyanet İşleri Başkanlığı", domain: "ezanvakti.emushaf.net" },
+  aladhan:   { note: "AlAdhan · Diyanet yöntemi", domain: "api.aladhan.com" }
+};
+
+const IL_TR = ["ADANA","ADIYAMAN","AFYONKARAHİSAR","AĞRI","AKSARAY","AMASYA","ANKARA","ANTALYA","ARDAHAN","ARTVİN","AYDIN","BALIKESİR","BARTIN","BATMAN","BAYBURT","BİLECİK","BİNGÖL","BİTLİS","BOLU","BURDUR","BURSA","ÇANAKKALE","ÇANKIRI","ÇORUM","DENİZLİ","DİYARBAKIR","DÜZCE","EDİRNE","ELAZIĞ","ERZİNCAN","ERZURUM","ESKİŞEHİR","GAZİANTEP","GİRESUN","GÜMÜŞHANE","HAKKARİ","HATAY","IĞDIR","ISPARTA","İSTANBUL","İZMİR","KAHRAMANMARAŞ","KARABÜK","KARAMAN","KARS","KASTAMONU","KAYSERİ","KİLİS","KIRIKKALE","KIRKLARELİ","KIRŞEHİR","KOCAELİ","KONYA","KÜTAHYA","MALATYA","MANİSA","MARDİN","MERSİN","MUĞLA","MUŞ","NEVŞEHİR","NİĞDE","ORDU","OSMANİYE","RİZE","SAKARYA","SAMSUN","ŞANLIURFA","SİİRT","SİNOP","ŞIRNAK","SİVAS","TEKİRDAĞ","TOKAT","TRABZON","TUNCELİ","UŞAK","VAN","YALOVA","YOZGAT","ZONGULDAK"];
+function trToEn(s) {
+  return String(s || "").replace(/[İIıi]/g, "I").replace(/[Şş]/g, "S").replace(/[Ğğ]/g, "G")
+    .replace(/[Üü]/g, "U").replace(/[Öö]/g, "O").replace(/[Çç]/g, "C");
+}
+const STATIC_ILLER = IL_TR.map((ad, i) => ({ id: String(500 + i), ad, en: trToEn(ad) }));
+function sameIl(a, b) {
+  const n = (x) => trToEn(String(x || "").toLocaleUpperCase("tr").trim());
+  return !!a && !!b && n(a) === n(b);
+}
+
+function combineSignals(signalA, signalB) {
+  if (!(signalA instanceof AbortSignal)) signalA = null;
+  if (!(signalB instanceof AbortSignal)) signalB = null;
+  if (!signalA) return signalB;
+  if (!signalB) return signalA;
+  if (signalA.aborted || signalB.aborted) {
+    const c = new AbortController();
+    c.abort();
+    return c.signal;
+  }
+  const combined = new AbortController();
+  const onAbort = () => combined.abort();
+  signalA.addEventListener("abort", onAbort, { once: true });
+  signalB.addEventListener("abort", onAbort, { once: true });
+  return combined.signal;
+}
+
+const USER_ABORT_NAME = "UserAbortError";
+function makeUserAbortError() {
+  const err = new Error("İstek kullanıcı tarafından iptal edildi.");
+  err.name = USER_ABORT_NAME;
+  return err;
+}
+function isUserAbort(e) { return !!e && e.name === USER_ABORT_NAME; }
+
+async function fetchJSON(url, { timeoutMs = 15000, signal } = {}) {
+  const timeoutController = new AbortController();
+  const timer = setTimeout(() => timeoutController.abort(), timeoutMs);
+  const combinedSignal = combineSignals(timeoutController.signal, signal);
+  let res;
+  try {
+    res = await fetch(url, { cache: "no-store", mode: "cors", credentials: "omit", referrerPolicy: "no-referrer", signal: combinedSignal });
+  } catch (e) {
+    if (e.name === "AbortError") {
+      if (timeoutController.signal.aborted) {
+        throw new Error("Bağlantı zaman aşımına uğradı, tekrar deneyin.");
+      }
+      throw makeUserAbortError();
+    }
+    throw new Error("Ağ hatası: " + (e.message || e));
+  } finally {
+    clearTimeout(timer);
+  }
+  if (!res.ok) throw new Error("API hatası: " + res.status);
+  let json;
+  try {
+    json = await res.json();
+  } catch (e) {
+    throw new Error("Sunucudan geçersiz yanıt geldi.");
+  }
+  if (json && typeof json === "object" && "data" in json) {
+    if (json.success === false) throw new Error(json.message || "API başarısız");
+    return json.data;
+  }
+  return json;
+}
+
+async function getIller() {
+  const cached = cacheGet("iller");
+  if (cached) return cached;
+  const data = await fetchJSON(`${API_BASE}/locations/states?countryId=2`, { timeoutMs: SOURCE_TIMEOUT_MS });
+  if (!Array.isArray(data)) throw new Error("Sunucudan geçersiz yanıt geldi.");
+  data.sort((a, b) => (a.name || "").localeCompare(b.name || "", "tr"));
+  const normalized = data.map(s => ({ SehirID: s._id, SehirAdi: s.name }));
+  cacheSet("iller", normalized);
+  return normalized;
+}
+
+function pickMerkez(list, nameOf, ilAd) {
+  const up = (x) => String(x || "").toLocaleUpperCase("tr").trim();
+  const aranan = up(ilAd);
+  const x = list.find((i) => up(nameOf(i)) === aranan)
+    || list.find((i) => up(nameOf(i)) === "MERKEZ")
+    || list.find((i) => up(nameOf(i)).includes("MERKEZ"));
+  return { item: x || list[0], exact: !!x };
+}
+
+async function getIlAdindakiIlce(ilId, ilAd) {
+  const data = await fetchJSON(`${API_BASE}/locations/districts?stateId=${ilId}`);
+  if (!Array.isArray(data) || data.length === 0) return null;
+  const { item, exact } = pickMerkez(data, (i) => i.name, ilAd);
+  return { IlceID: item._id, IlceAdi: item.name, isExactMatch: exact };
+}
+
+const ISTANBUL_FMT = new Intl.DateTimeFormat("en-US", {
+  timeZone: "Europe/Istanbul",
+  year: "numeric", month: "2-digit", day: "2-digit"
+});
+function getIstanbulParts() {
+  const parts = ISTANBUL_FMT.formatToParts(new Date());
+  const get = (t) => parts.find(p => p.type === t).value;
+  return {
+    year: parseInt(get("year"), 10),
+    month: parseInt(get("month"), 10),
+    day: parseInt(get("day"), 10)
+  };
+}
+
+function hm(v) {
+  const m = typeof v === "string" ? v.match(/^(\d{1,2}):(\d{2})/) : null;
+  return m ? pad(Number(m[1])) + ":" + m[2] : "--:--";
+}
+
+function isoDate(d) {
+  return d.getUTCFullYear() + "-" + pad(d.getUTCMonth() + 1) + "-" + pad(d.getUTCDate());
+}
+
+async function getVakitlerImsakiyem(ilceId, signal, fromDays = -1, toDays = 3, timeoutMs = 15000) {
+  const p = getIstanbulParts();
+  const today = new Date(Date.UTC(p.year, p.month - 1, p.day, 12, 0, 0));
+  const start = new Date(today); start.setUTCDate(start.getUTCDate() + fromDays);
+  const end = new Date(today); end.setUTCDate(end.getUTCDate() + toDays);
+  const url = `${API_BASE}/prayer-times/${encodeURIComponent(ilceId)}/range?startDate=${isoDate(start)}&endDate=${isoDate(end)}`;
+  const data = await fetchJSON(url, { signal, timeoutMs });
+  return mapDays(data);
+}
+
+function mapDays(data) {
+  if (!Array.isArray(data)) throw new Error("Sunucudan geçersiz yanıt geldi.");
+  const p = getIstanbulParts();
+  return data.map(d => {
+    const t = (d.times && typeof d.times === "object") ? d.times : d;
+    const pick = (a, b) => hm(t[a] ?? t[b] ?? d[a] ?? d[b] ?? "");
+
+    let dateObj;
+    const raw = d.date || d.MiladiTarihKisaIso8601 || d.MiladiTarihUzunIso8601 || "";
+    if (/^\d{2}\.\d{2}\.\d{4}$/.test(raw)) {
+      const [dd, mm, yyyy] = raw.split(".").map(Number);
+      dateObj = new Date(Date.UTC(yyyy, mm - 1, dd));
+    } else if (/^\d{4}-\d{2}-\d{2}/.test(raw)) {
+      const [yyyy, mm, dd] = raw.substring(0, 10).split("-").map(Number);
+      dateObj = new Date(Date.UTC(yyyy, mm - 1, dd));
+    } else {
+      dateObj = new Date(Date.UTC(p.year, p.month - 1, p.day));
+    }
+
+    return {
+      date:   dateObj,
+      imsak:  pick("imsak",  "Imsak"),
+      gunes:  pick("gunes",  "Gunes"),
+      ogle:   pick("ogle",   "Ogle"),
+      ikindi: pick("ikindi", "Ikindi"),
+      aksam:  pick("aksam",  "Aksam"),
+      yatsi:  pick("yatsi",  "Yatsi"),
+      hijri:  d.HicriTarihUzun || (d.hijri_date && d.hijri_date.full_date) || d.hijriDate || ""
+    };
+  });
+}
+
+async function getVakitlerEmushaf(ilceId, signal) {
+  const data = await fetchJSON(`${EMUSHAF_BASE}/vakitler/${encodeURIComponent(ilceId)}`, { signal, timeoutMs: 10000 });
+  return mapDays(data);
+}
+async function getIlMerkezEmushaf(ilId, ilAd) {
+  const data = await fetchJSON(`${EMUSHAF_BASE}/ilceler/${encodeURIComponent(ilId)}`, { timeoutMs: 10000 });
+  if (!Array.isArray(data) || data.length === 0) return null;
+  const { item, exact } = pickMerkez(data, (i) => i.IlceAdi, ilAd);
+  return { IlceID: String(item.IlceID), IlceAdi: item.IlceAdi, isExactMatch: exact };
+}
+
+const HIJRI_TR = ["Muharrem","Safer","Rebiülevvel","Rebiülahir","Cemaziyelevvel","Cemaziyelahir","Recep","Şaban","Ramazan","Şevval","Zilkade","Zilhicce"];
+async function getVakitlerAladhan(ilEn, signal) {
+  const p = getIstanbulParts();
+  const dim = new Date(Date.UTC(p.year, p.month, 0)).getUTCDate();
+  const months = [[p.year, p.month]];
+  if (p.day <= 1) months.unshift(p.month === 1 ? [p.year - 1, 12] : [p.year, p.month - 1]);
+  if (dim - p.day < 3) months.push(p.month === 12 ? [p.year + 1, 1] : [p.year, p.month + 1]);
+  const city = encodeURIComponent(String(ilEn || "").toLowerCase().replace(/(^|[ \-])([a-z])/g, (_, a, b) => a + b.toUpperCase()));
+  const lists = await Promise.all(months.map(([y, m]) =>
+    fetchJSON(`${ALADHAN_BASE}/calendarByCity/${y}/${m}?city=${city}&country=Turkey&method=13`, { signal, timeoutMs: 10000 })));
+  const out = [];
+  for (const data of lists) {
+    if (!Array.isArray(data)) throw new Error("Sunucudan geçersiz yanıt geldi.");
+    for (const d of data) {
+      const t = d && d.timings ? d.timings : {};
+      const g = d && d.date && d.date.gregorian;
+      const h = d && d.date && d.date.hijri;
+      const gm = g && typeof g.date === "string" ? g.date.match(/^(\d{2})-(\d{2})-(\d{4})$/) : null;
+      if (!gm) continue;
+      out.push({
+        date:   new Date(Date.UTC(Number(gm[3]), Number(gm[2]) - 1, Number(gm[1]))),
+        imsak:  hm(t.Fajr),
+        gunes:  hm(t.Sunrise),
+        ogle:   hm(t.Dhuhr),
+        ikindi: hm(t.Asr),
+        aksam:  hm(t.Maghrib),
+        yatsi:  hm(t.Isha),
+        hijri:  (h && h.month && h.day && h.year)
+          ? Number(h.day) + " " + (HIJRI_TR[Number(h.month.number) - 1] || h.month.en || "") + " " + h.year : ""
+      });
+    }
+  }
+  out.sort((a, b) => a.date - b.date);
+  return out;
+}
+
+function getVakitler(src, loc, signal) {
+  if (src === "emushaf") return getVakitlerEmushaf(loc.ilceId, signal);
+  if (src === "aladhan") return getVakitlerAladhan(loc.ilEn, signal);
+  return getVakitlerImsakiyem(loc.ilceId, signal, -1, 3, SOURCE_TIMEOUT_MS);
+}
+
+function toTitle(s) {
+  if (!s) return s;
+  return s.toLocaleLowerCase("tr").replace(/(^|[ \-'])([a-zçğıöşüâî])/gu, (_, p1, p2) => p1 + p2.toLocaleUpperCase("tr"));
+}
+
+async function populateIller() {
+  clearChildren(stateSelect);
+  const mySrc = source;
+  if (mySrc !== "imsakiyem") {
+    stateSelect.appendChild(makeOption("", "İl seçin…", undefined, { disabled: true, selected: true }));
+    for (const il of STATIC_ILLER) stateSelect.appendChild(makeOption(il.id, toTitle(il.ad), il.ad));
+    stateSelect.disabled = false;
+    return true;
+  }
+  try {
+    const iller = await getIller();
+    if (mySrc !== source) return true;
+    stateSelect.appendChild(makeOption("", "İl seçin…", undefined, { disabled: true, selected: true }));
+    for (const il of iller) {
+      stateSelect.appendChild(makeOption(il.SehirID, toTitle(il.SehirAdi), il.SehirAdi));
+    }
+    stateSelect.disabled = false;
+    return true;
+  } catch (e) {
+    if (mySrc !== source) return true;
+    stateSelect.appendChild(makeOption("", "Yüklenemedi — sayfayı yenile", undefined, { disabled: true, selected: true }));
+    if (!state.location) setStatus("İl listesi alınamadı: " + (e.message || "Bağlantı hatası") + " — Sayfayı yenileyip tekrar deneyin.", true);
+    return false;
+  }
+}
+
+const TR_UTC_OFFSET_HOURS = 3;
+function parseTime(hhmm, baseDate) {
+  if (typeof hhmm !== "string" || !/^\d{1,2}:\d{2}$/.test(hhmm)) return null;
+  const [h, m] = hhmm.split(":").map(Number);
+  return new Date(Date.UTC(baseDate.getUTCFullYear(), baseDate.getUTCMonth(), baseDate.getUTCDate(), h - TR_UTC_OFFSET_HOURS, m, 0, 0));
+}
+
+const TR_MONTHS = ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
+const TR_DAYS   = ["Pazar","Pazartesi","Salı","Çarşamba","Perşembe","Cuma","Cumartesi"];
+function formatDate(d) { return `${d.getUTCDate()} ${TR_MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}, ${TR_DAYS[d.getUTCDay()]}`; }
+
+const SABAH_OFFSET_MIN = 1;
+let offsetDayMax = null;
+function getOffsetMax() { return offsetDayMax || Infinity; }
+function applyOffsetLimit(period) {
+  const day = period && period.imsakDay;
+  const imsak = day ? parseTime(day.imsak, day.date) : null;
+  const gunes = day ? parseTime(day.gunes, day.date) : null;
+  const diff = (imsak && gunes) ? Math.floor((gunes.getTime() - imsak.getTime()) / 60000) : 0;
+  offsetDayMax = diff >= SABAH_OFFSET_MIN ? diff : null;
+  const el = document.getElementById("sabahOffset");
+  if (!el) return;
+  if (offsetDayMax) {
+    el.max = String(offsetDayMax);
+    el.title = "Bugün için en fazla " + offsetDayMax + " dk (imsak vaktine kadar)";
+  } else {
+    el.removeAttribute("max");
+    el.removeAttribute("title");
+  }
+  if (offsetDayMax && document.activeElement !== el) {
+    const v = parseInt(el.value, 10);
+    if (!isNaN(v) && v > offsetDayMax) {
+      el.value = String(offsetDayMax);
+      try { localStorage.setItem(OFFSET_STORAGE_KEY, el.value); } catch (e) { console.warn("[storage] yazılamadı:", e); }
+    }
+  }
+}
+function showOffsetLimitNote() {
+  if (!offsetDayMax) return;
+  if (!statusEl || statusEl.textContent.trim()) return;
+  const msg = "Bugün için en fazla " + offsetDayMax + " dk girilebilir (imsak vaktine kadar).";
+  setStatus(msg, false);
+  setTimeout(() => { if (statusEl.textContent === msg) setStatus(""); }, 4000);
+}
+function getSabahOffset() {
+  const el = document.getElementById("sabahOffset");
+  const v = el ? parseInt(el.value, 10) : NaN;
+  if (isNaN(v) || v <= 0) return null;
+  return Math.min(Math.max(v, SABAH_OFFSET_MIN), getOffsetMax());
+}
+function clampOffsetInput(el, final) {
+  if (!el) return false;
+  const v = parseInt(el.value, 10);
+  if (isNaN(v)) return false;
+  let c = v;
+  if (v > getOffsetMax()) c = getOffsetMax();
+  else if (final && v < SABAH_OFFSET_MIN) c = SABAH_OFFSET_MIN;
+  if (c === v) return false;
+  el.value = c;
+  return true;
+}
+
+function todayIndex(list) {
+  const p = getIstanbulParts();
+  return list.findIndex((t) =>
+    t.date.getUTCFullYear() === p.year && t.date.getUTCMonth() === p.month - 1 && t.date.getUTCDate() === p.day);
+}
+
+function findActivePeriod(timesList) {
+  const todayIdx = todayIndex(timesList);
+  if (todayIdx < 0) return null;
+
+  const todayData = timesList[todayIdx];
+  const todayGunes = parseTime(todayData.gunes, todayData.date);
+  const now = new Date();
+
+  if (todayGunes && now < todayGunes) {
+    if (todayIdx > 0) return { aksamDay: timesList[todayIdx - 1], imsakDay: todayData };
+    return null;
+  }
+  const next = timesList[todayIdx + 1];
+  if (next) return { aksamDay: todayData, imsakDay: next };
+  return { aksamDay: timesList[todayIdx - 1] || todayData, imsakDay: todayData };
+}
+
+function ceilMin(d) {
+  if (!d) return d;
+  const s = d.getUTCSeconds();
+  return s === 0 ? d : new Date(d.getTime() + (60 - s) * 1000);
+}
+
+const TR_TIME_FMT = new Intl.DateTimeFormat("en-GB", {
+  timeZone: "Europe/Istanbul",
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false,
+  hourCycle: "h23"
+});
+
+function fmt(d) {
+  if (!d) return "--:--";
+  const c = ceilMin(d);
+  const parts = TR_TIME_FMT.formatToParts(c);
+  const hh = parts.find(p => p.type === "hour").value;
+  const mm = parts.find(p => p.type === "minute").value;
+  return hh + ":" + mm;
+}
+
+function calcDerived(period) {
+  if (!period || !period.aksamDay || !period.imsakDay) return null;
+  const aksam = parseTime(period.aksamDay.aksam, period.aksamDay.date);
+  const imsak = parseTime(period.imsakDay.imsak, period.imsakDay.date);
+  const gunes = parseTime(period.imsakDay.gunes, period.imsakDay.date);
+  if (!aksam || !imsak || !gunes) return null;
+  const nightMs = imsak - aksam;
+  if (!Number.isFinite(nightMs) || nightMs <= 0) return null;
+  const seher    = new Date(imsak.getTime() - Math.floor(nightMs / 6));
+  const teheccud = new Date(imsak.getTime() - Math.floor(nightMs / 3));
+  const sabahOnce = getSabahOffset();
+  const sabahRaw = sabahOnce ? new Date(gunes.getTime() - sabahOnce * 60 * 1000) : imsak;
+  const sabah    = sabahRaw < imsak ? imsak : sabahRaw;
+  const cami     = camiMode === "imsak" ? new Date(imsak.getTime() + 30 * 60 * 1000) : new Date(gunes.getTime() - 30 * 60 * 1000);
+  return { teheccud, seher, sabah, cami, imsak, aksam, gunes };
+}
+
+async function loadAndRender() {
+  if (!state.location) { setStatus("Lütfen il seçin."); return; }
+  if (!state.location.ilceId) {
+    setStatus("Vakit verisi hazırlanıyor…"); return;
+  }
+  const myRequestId = ++state.requestId;
+  const mySource = source;
+  const myLoc = state.location;
+
+  if (state.abortController) state.abortController.abort();
+  state.abortController = new AbortController();
+  const myAbortController = state.abortController;
+
+  const haveShown = !!(state.times && state.timesIlceId === myLoc.ilceId && state.timesSource === mySource);
+  if (!haveShown) setLoading(true);
+  setStatus(haveShown ? "Güncel vakitler alınıyor…" : "Vakitler çekiliyor…");
+
+  try {
+    const times = await getVakitler(mySource, myLoc, myAbortController.signal);
+
+    if (myRequestId !== state.requestId) return;
+
+    state.times = times;
+    state.timesIlceId = myLoc.ilceId;
+    state.timesSource = mySource;
+    state.stale = false;
+    const period = findActivePeriod(times);
+    if (!period) throw new Error("Bugün için veri bulunamadı.");
+
+    const ok = render(period);
+    if (ok) {
+      setStatus("");
+      startCountdown();
+      retryCount = 0;
+      setDataMode("live", Date.now());
+      if (mySource === "imsakiyem") {
+        saveTimesCache(myLoc.ilceId, times);
+        extendTimesCache(myLoc.ilceId).catch(() => {});
+      }
+    }
+  } catch (e) {
+    if (myRequestId !== state.requestId) return;
+    if (isUserAbort(e)) { setLoading(false); return; }
+    console.error(e);
+
+    const msg = String((e && e.message) || e);
+    const isTransient = /Ağ hatası|zaman aşımı|Failed to fetch|API hatası: (?:5\d\d|429|408)|geçersiz yanıt/i.test(msg);
+
+    // Ekrandaki vakitler aynı il ve kaynağa aitse geçerlidir: geri sayım durmadan devam eder
+    // (önceden yalnız "Kayıtlı veri"de devam ediyordu; internet gidince "Kalan Süre" donuyordu).
+    const keepTimes = !!state.times && state.timesIlceId === myLoc.ilceId && state.timesSource === mySource;
+    if (!keepTimes) {
+      resetTimes();
+      highlightCurrentVakit(null);
+    }
+
+    if (state.times && state.dataMode === "live") setDataMode("last", state.dataAt);
+
+    if (mySource === "imsakiyem" && !keepTimes) {
+      try {
+        const fallback = loadTimesCache(myLoc.ilceId);
+        const fallbackPeriod = fallback ? findActivePeriod(fallback) : null;
+        if (fallbackPeriod) {
+          state.times = fallback;
+          state.timesIlceId = myLoc.ilceId;
+          state.timesSource = mySource;
+          state.stale = true;
+          if (render(fallbackPeriod)) {
+            startCountdown();
+            const fbEntry = readTimesCache(myLoc.ilceId);
+            setDataMode("cache", fbEntry ? fbEntry.ts : Date.now());
+            setStatus("Bağlantı kurulamadı: telefona kaydedilen son vakitler gösteriliyor. Bağlantı gelince yenilenir. (" + msg.slice(0, 70) + ")", false);
+            return;
+          }
+        }
+      } catch (ce) { console.warn("[cache] yedek kullanılamadı:", ce); }
+    }
+
+    if (isTransient) {
+      setStatus(
+        "Vakitler alınamadı." + (state.times ? " Ekrandaki vakitler son çekilen verilerdir." : "") +
+        " İnternet bağlantınızı kontrol edin; " +
+        "bazı işyeri/kurumsal ağlar bu veri kaynağına erişimi engelleyebilir. " +
+        "Yukarıdan farklı bir veri kaynağı seçebilirsiniz.",
+        true
+      );
+    } else {
+      setStatus("Vakitler alınamadı: " + msg, true);
+    }
+    if (keepTimes && isTransient) scheduleReload();
+    setLoading(false);
+  }
+}
+
+const TIME_IDS = ["teheccudTime", "arasiTime", "seherTime", "sabahTime", "camiTime", "imsakMiniTime", "gunesMiniTime"];
+
+function setLoading(on) {
+  TIME_IDS.forEach(id => $(id).classList.toggle("skeleton", on));
+  document.querySelectorAll(".dk-rng").forEach(el => el.classList.toggle("skeleton", on));
+  document.querySelectorAll("[data-key]").forEach(el => el.classList.toggle("skeleton", on));
+}
+
+function resetTimes() {
+  state.times = null; state.timesIlceId = null; state.timesSource = null;
+  if (state.countdownTimer) { clearInterval(state.countdownTimer); state.countdownTimer = null; }
+  clearDisplay();
+  setLoading(false);
+}
+
+function clearDisplay() {
+  const setT = (id, t) => { const el = document.getElementById(id); if (el) el.textContent = t; };
+  TIME_IDS.forEach((id) => setT(id, "--:--"));
+  document.querySelectorAll("[data-key]").forEach((el) => { el.textContent = "--:--"; });
+  setT("dateLabel", "-"); setT("hijriLabel", "");
+  lastGridDateKey = null;
+  refreshDuhaKerahat();
+  setT("nextName", "—"); setT("nextTime", "--:--"); setT("nextRaw", ""); setT("nextRemain", "--:--:--");
+  cachedNextEvent = null;
+  setDataMode(null);
+}
+
+function render(period) {
+  applyOffsetLimit(period);
+  setLoading(false);
+  lastRenderedImsakDate = period.imsakDay.date.getTime();
+  const { imsakDay } = period;
+  $("dateLabel").textContent = formatDate(imsakDay.date);
+  $("hijriLabel").textContent = imsakDay.hijri ? "Hicrî: " + imsakDay.hijri : "";
+
+  refreshVakitList(true);
+  refreshDuhaKerahat();
+
+  const d = calcDerived(period);
+  if (d) {
+    $("teheccudTime").textContent = fmt(d.teheccud);
+    const arasiMs = d.teheccud.getTime() + (d.seher.getTime() - d.teheccud.getTime()) / 2;
+    $("arasiTime").textContent    = fmt(new Date(arasiMs));
+    $("seherTime").textContent    = fmt(d.seher);
+    $("sabahTime").textContent    = fmt(d.sabah);
+    const camiEl = document.getElementById("camiTime");
+    if (camiEl) camiEl.textContent = fmt(d.cami);
+    const imsakMiniEl = document.getElementById("imsakMiniTime");
+    if (imsakMiniEl) imsakMiniEl.textContent = fmt(d.imsak);
+    const gunesMiniEl = document.getElementById("gunesMiniTime");
+    if (gunesMiniEl) gunesMiniEl.textContent = fmt(d.gunes);
+  } else {
+    TIME_IDS.forEach((id) => { const el = document.getElementById(id); if (el) el.textContent = "--:--"; });
+    setStatus("Vakit verisi eksik geldi, sayfayı yenileyin.", true);
+  }
+
+  return !!d;
+}
+
+function getEvents() {
+  if (!state.times || !state.times.length) return [];
+  const todayIdx = todayIndex(state.times);
+  if (todayIdx < 0) return [];
+  const today = state.times[todayIdx];
+  const list = [
+    { key: "sabah",  name: "Sabah Namazı", time: parseTime(today.imsak,   today.date) },
+    { key: "ogle",   name: "Öğle",         time: parseTime(today.ogle,    today.date) },
+    { key: "ikindi", name: "İkindi",       time: parseTime(today.ikindi,  today.date) },
+    { key: "aksam",  name: "Akşam",        time: parseTime(today.aksam,   today.date) },
+    { key: "yatsi",  name: "Yatsı",        time: parseTime(today.yatsi,   today.date) }
+  ];
+  const tomorrow = state.times[todayIdx + 1];
+  if (tomorrow) {
+    list.push({ key: "sabah", name: "Sabah Namazı", time: parseTime(tomorrow.imsak, tomorrow.date) });
+  }
+  return list.filter((e) => e.time instanceof Date);
+}
+
+function findNext(events) {
+  const now = new Date();
+  for (const e of events) if (e.time > now) return e;
+  return null;
+}
+
+function startCountdown() {
+  if (state.countdownTimer) clearInterval(state.countdownTimer);
+  cachedNextEvent = null;
+  lastScanAt = 0;
+  tickCountdown();
+  state.countdownTimer = setInterval(tickCountdown, 1000);
+}
+
+const RETRY_BASE_MS = 5000;
+const RETRY_MAX_MS = 60000;
+
+function scheduleReload() {
+  if (retryPending) return;
+  retryPending = true;
+  const delay = Math.min(RETRY_BASE_MS * Math.pow(2, retryCount), RETRY_MAX_MS);
+  retryCount++;
+  setTimeout(() => { retryPending = false; loadAndRender(); }, delay);
+}
+
+function formatRemain(ms) {
+  if (ms < 0) ms = 0;
+  const totalSec = Math.floor(ms / 1000);
+  const hh = Math.floor(totalSec / 3600);
+  const mm = Math.floor((totalSec % 3600) / 60);
+  const ss = totalSec % 60;
+  return pad(hh) + ":" + pad(mm) + ":" + pad(ss);
+}
+
+const GRID_KEYS = ["imsak", "gunes", "ogle", "ikindi", "aksam", "yatsi"];
+let lastHighlightKey = null;
+let lastGridDateKey = null;
+
+function getTodayData() {
+  if (!state.times || !state.times.length) return null;
+  return state.times[todayIndex(state.times)] || null;
+}
+function getActiveVakitInfo() {
+  const today = getTodayData();
+  if (!today) return null;
+  const nowMs = Date.now();
+  const todayImsak = parseTime(today.imsak, today.date);
+  if (todayImsak && nowMs < todayImsak.getTime()) return { day: today, key: null };
+  let current = null;
+  for (const key of GRID_KEYS) {
+    const t = parseTime(today[key], today.date);
+    if (t && t.getTime() <= nowMs) current = key;
+  }
+  return { day: today, key: current };
+}
+function highlightCurrentVakit(info) {
+  const key = info ? info.key : null;
+  if (key === lastHighlightKey) return;
+  lastHighlightKey = key;
+  document.querySelectorAll("#otherTimes .tm").forEach((el) => {
+    if (el.parentElement) el.parentElement.classList.toggle("is-current", el.dataset.key === key);
+  });
+}
+function refreshVakitList(force) {
+  const info = getActiveVakitInfo();
+  if (!info) { highlightCurrentVakit(null); return; }
+  const day = info.day;
+  const dateKey = day.date.getTime();
+  if (force || dateKey !== lastGridDateKey) {
+    lastGridDateKey = dateKey;
+    document.querySelectorAll("#otherTimes .tm").forEach((el) => {
+      el.textContent = day[el.dataset.key] || "--:--";
+    });
+    const titleEl = document.getElementById("vakitTableTitle");
+    if (titleEl) titleEl.textContent = formatDate(day.date);
+    const hijriTitleEl = document.getElementById("vakitTableHijri");
+    if (hijriTitleEl) hijriTitleEl.textContent = day.hijri ? "Hicrî: " + day.hijri : "";
+  }
+  highlightCurrentVakit(info);
+}
+
+/* Duha ve kerahat kartları (s/e: vaktin başı/sonu, u: bu andan sonra yarın gösterilir (varsayılan akşam),
+   show: görünen saat(ler), k: kerahat → vakit sürerken kırmızı; Duha'da tersi: vakit dışında sarı, vakit içinde yeşil) */
+const DK_LIST = [
+  { id: "dkDuha",   s: "duha",    e: "duhaEnd",  u: "duhaEnd", show: ["duha", "duhaEnd"] },
+  { id: "dkSabah",  s: "gunes",   e: "sabahEnd", show: ["sabahEnd"], k: 1 },
+  { id: "dkOgle",   s: "ogleK",   e: "ogle",     show: ["ogleK"],    k: 1 },
+  { id: "dkIkindi", s: "ikindiK", e: "aksam",    show: ["ikindiK"],  k: 1 }
+];
+
+/* Duha başlangıcı = imsak + (akşam − imsak)/4; artık saniyeler dakikaya ileri yuvarlanır (8:19:15 → 8:20)
+   Sabah/ikindi kerahatı takvim saatinden 52 dk. (7 dk. temkin dahil; gerçek doğuş/batıştan en az 45 dk.), öğle kerahatı 30 dk. */
+function dkDay(d) {
+  const t = (k) => { const x = parseTime(d[k], d.date); return x && x.getTime(); };
+  const imsak = t("imsak"), gunes = t("gunes"), ogle = t("ogle"), aksam = t("aksam");
+  if (!imsak || !gunes || !ogle || !aksam) return null;
+  const ogleK = ogle - 30 * 60000;
+  return {
+    duha: ceilMin(new Date(imsak + (aksam - imsak) / 4)).getTime(), duhaEnd: ogleK,
+    gunes, sabahEnd: gunes + 52 * 60000, ogleK, ogle, ikindiK: aksam - 52 * 60000, aksam
+  };
+}
+
+function refreshDuhaKerahat() {
+  const today = getTodayData();
+  const next = today && state.times.find((x) => x.date.getTime() === today.date.getTime() + 864e5);
+  const T0 = today && dkDay(today), T1 = (next && dkDay(next)) || T0;
+  const now = Date.now();
+  for (const c of DK_LIST) {
+    const el = $(c.id), rng = el.querySelector(".dk-rng"), cd = el.querySelector(".dk-cd");
+    const day = T0 && (now >= T0[c.u || "aksam"] ? T1 : T0);
+    const on = !!day && now >= day[c.s] && now < day[c.e];
+    el.classList.toggle("red", !!day && !!c.k === on);
+    if (c.k) el.querySelector(".dk-no").hidden = !on;
+    rng.textContent = day ? c.show.map((k) => fmt(new Date(day[k]))).join(" – ") : "--:--";
+    if (cd) {
+      cd.hidden = !on;
+      if (on) cd.querySelector("b").textContent = formatRemain(day[c.e] - now);
+    }
+  }
+}
+
+const TEMKIN_MIN = { ogle: 5, ikindi: 4, aksam: 7 };
+
+function updateNextBar(next) {
+  const nameEl = document.getElementById("nextName");
+  const timeEl = document.getElementById("nextTime");
+  const rawEl = document.getElementById("nextRaw");
+  const remainEl = document.getElementById("nextRemain");
+  if (!nameEl || !timeEl || !rawEl || !remainEl) return;
+  nameEl.textContent = (next.key === "sabah" ? "Sabah" : next.name) + " Vakti";
+  timeEl.textContent = fmt(next.time);
+  const temkin = source === "aladhan" ? 0 : TEMKIN_MIN[next.key];
+  rawEl.textContent = temkin ? "/" + fmt(new Date(next.time.getTime() - temkin * 60000)) : "";
+  remainEl.textContent = formatRemain(next.time.getTime() - Date.now());
+  refreshVakitList();
+  refreshDuhaKerahat();
+}
+
+function tickCountdown() {
+  if (!state.times) return;
+  const now = Date.now();
+  const needsScan = !cachedNextEvent
+    || now >= cachedNextEvent.time.getTime()
+    || (now - lastScanAt) >= 60000;
+
+  if (needsScan) {
+    lastScanAt = now;
+    const period = findActivePeriod(state.times);
+    if (!period) {
+      scheduleReload();
+      return;
+    }
+
+    if (lastRenderedImsakDate !== period.imsakDay.date.getTime()) {
+      lastRenderedImsakDate = period.imsakDay.date.getTime();
+      render(period);
+    }
+
+    const events = getEvents();
+    cachedNextEvent = findNext(events);
+
+    if (!cachedNextEvent) {
+      scheduleReload();
+      return;
+    }
+  }
+
+  updateNextBar(cachedNextEvent);
+}
+
+function setCamiMode(mode, save) {
+  camiMode = mode === "imsak" ? "imsak" : "gunes";
+  document.querySelector(".sabah-card").classList.toggle("cami-imsak", camiMode === "imsak");
+  document.querySelectorAll(".cami-opt").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.mode === camiMode)));
+  if (save) {
+    try { localStorage.setItem(CAMI_MODE_KEY, camiMode); } catch (e) { console.warn("[storage] yazılamadı:", e); }
+    const period = state.times && findActivePeriod(state.times);
+    if (period) render(period);
+  }
+}
+
+function cleanupLegacyStorage() {
+  try { localStorage.removeItem("teheccud-seher.location.v1"); } catch (e) { console.warn("[storage] silinemedi:", e); }
+}
+
+async function init() {
+  cleanupLegacyStorage();
+  try { setCamiMode(localStorage.getItem(CAMI_MODE_KEY)); } catch (e) { console.warn("[storage] okunamadı:", e); }
+  document.querySelectorAll(".cami-opt").forEach((b) => b.addEventListener("click", () => setCamiMode(b.dataset.mode, true)));
+  $("ilSel").addEventListener("change", updateIlCityDisplay);
+  $("ilSel").addEventListener("change", onIlChange);
+  const offsetInput = document.getElementById("sabahOffset");
+  if (offsetInput) {
+    try {
+      const savedOffset = localStorage.getItem(OFFSET_STORAGE_KEY);
+      if (savedOffset !== null) {
+        offsetInput.value = savedOffset;
+        if (clampOffsetInput(offsetInput, true)) {
+          try { localStorage.setItem(OFFSET_STORAGE_KEY, offsetInput.value); } catch (e) { console.warn("[storage] yazılamadı:", e); }
+        }
+      }
+    } catch (e) { console.warn("[storage] okunamadı:", e); }
+
+    offsetInput.addEventListener("change", () => {
+      if (clampOffsetInput(offsetInput, true)) offsetInput.dispatchEvent(new Event("input"));
+    });
+    offsetInput.addEventListener("input", () => {
+      if (clampOffsetInput(offsetInput)) showOffsetLimitNote();
+      try { localStorage.setItem(OFFSET_STORAGE_KEY, offsetInput.value); } catch (e) { console.warn("[storage] yazılamadı:", e); }
+      if (state.times) {
+        const period = findActivePeriod(state.times);
+        if (period) render(period);
+      }
+    });
+  }
+
+  sourceSelect.addEventListener("change", () => activateSource(sourceSelect.value));
+  const s0 = readSession(SESSION_SRC_KEY);
+  await activateSource(SOURCE_INFO[s0] ? s0 : "imsakiyem", true);
+}
+
+function updateSourceUI() {
+  const info = SOURCE_INFO[source] || SOURCE_INFO.imsakiyem;
+  sourceSelect.value = source;
+  const opt = sourceSelect.options[sourceSelect.selectedIndex];
+  srcDisplay.textContent = opt ? opt.textContent : info.domain;
+  const note = document.getElementById("srcNote");
+  const dom = document.getElementById("srcDomain");
+  if (note) note.textContent = info.note;
+  if (dom) dom.textContent = info.domain;
+}
+
+let sourceToken = 0;
+const SESSION_SRC_KEY = "kiyamul-leyl.session.source";
+const SESSION_IL_KEY = "kiyamul-leyl.session.il";
+let lastIlAd = null;
+function rememberIl(ilAd) {
+  if (!ilAd) return;
+  lastIlAd = ilAd;
+  try { sessionStorage.setItem(SESSION_IL_KEY, ilAd); } catch (e) {}
+}
+function readSession(key) { try { return sessionStorage.getItem(key); } catch (e) { return null; } }
+async function activateSource(newSrc, initial) {
+  const myToken = ++sourceToken;
+  if (initial && !lastIlAd) lastIlAd = readSession(SESSION_IL_KEY);
+  if (initial && !lastIlAd) { const sv = loadSaved(); if (sv && sv.ilAd) lastIlAd = sv.ilAd; }
+  const prevIlAd = (state.location && state.location.ilAd) || lastIlAd;
+  try { sessionStorage.setItem(SESSION_SRC_KEY, newSrc); } catch (e) {}
+  source = newSrc;
+  updateSourceUI();
+
+  state.requestId++;
+  if (state.abortController) { state.abortController.abort(); state.abortController = null; }
+  ilChangeToken++;
+  if (!initial) {
+    state.location = null;
+    resetTimes();
+    setStatus("");
+  }
+
+  const listPromise = populateIller();
+  updateIlCityDisplay();
+
+  let loc = null;
+  if (newSrc === "imsakiyem") {
+    const saved = loadSaved();
+    const savedOk = !!(saved && saved.ilId && saved.ilceId);
+    if (savedOk && (!prevIlAd || sameIl(prevIlAd, saved.ilAd))) {
+      loc = saved;
+    } else if (prevIlAd) {
+      const ok = await listPromise;
+      if (myToken !== sourceToken) return;
+      const opt = ok ? Array.from(stateSelect.options).find((o) => o.value && sameIl(o.dataset.ad, prevIlAd)) : null;
+      if (opt) { stateSelect.value = opt.value; updateIlCityDisplay(); await selectIl(opt.value, opt.dataset.ad); return; }
+      loc = savedOk ? saved : null;
+    } else if (savedOk) {
+      loc = saved;
+    }
+  } else if (prevIlAd) {
+    const il = STATIC_ILLER.find((x) => sameIl(x.ad, prevIlAd));
+    if (il) { stateSelect.value = il.id; updateIlCityDisplay(); await selectIl(il.id, il.ad); return; }
+  }
+
+  if (!loc) {
+    state.location = null;
+    updateIlCityDisplay();
+    setStatus(initial ? "İl seçerek başlayın. Bu seçim hatırlanacaktır." : "Bu kaynak için il seçin.");
+    listPromise.then((ok) => { if (myToken === sourceToken) illerLoaded = ok; });
+    return;
+  }
+
+  state.location = loc;
+  rememberIl(loc.ilAd);
+  if (loc.ilAd) ilCityDisplay.textContent = toTitle(loc.ilAd);
+  listPromise.then((ok) => {
+    if (myToken !== sourceToken) return;
+    illerLoaded = ok;
+    if (!ok || !state.location) return;
+    stateSelect.value = state.location.ilId;
+    if (stateSelect.value !== state.location.ilId) {
+      state.requestId++;
+      if (state.abortController) { state.abortController.abort(); state.abortController = null; }
+      state.location = null;
+      resetTimes();
+      updateIlCityDisplay();
+      setStatus("Kayıtlı şehriniz artık bulunamadı, lütfen tekrar seçin.", true);
+      return;
+    }
+    updateIlCityDisplay();
+  });
+  await loadAndRender();
+}
+
+let ilChangeToken = 0;
+function onIlChange(e) {
+  const sel = e.target;
+  const ilId = sel.value;
+  if (!ilId) return;
+  selectIl(ilId, sel.options[sel.selectedIndex].dataset.ad);
+}
+
+async function selectIl(ilId, ilAd) {
+  const myToken = ++ilChangeToken;
+  const mySource = source;
+  rememberIl(ilAd);
+
+  setStatus("Vakit verisi alınıyor…");
+
+  try {
+    let loc;
+    let exact = true;
+    if (mySource === "aladhan") {
+      const il = STATIC_ILLER.find((x) => x.id === String(ilId));
+      loc = { ilId: String(ilId), ilAd, ilceId: String(ilId), ilceAd: "", ilEn: il ? il.en : trToEn(ilAd) };
+    } else {
+      const ilce = mySource === "emushaf" ? await getIlMerkezEmushaf(ilId, ilAd) : await getIlAdindakiIlce(ilId, ilAd);
+      if (myToken !== ilChangeToken || mySource !== source) return;
+      if (!ilce) {
+        state.location = null;
+        resetTimes();
+        setStatus("Bu il için veri bulunamadı.", true);
+        return;
+      }
+      exact = ilce.isExactMatch;
+      loc = { ilId, ilAd, ilceId: ilce.IlceID, ilceAd: ilce.IlceAdi };
+    }
+    if (myToken !== ilChangeToken || mySource !== source) return;
+    state.location = loc;
+    if (mySource === "imsakiyem") saveLocation(loc);
+    retryCount = 0;
+    await loadAndRender();
+    if (myToken === ilChangeToken && exact === false) {
+      setStatus(
+        `"${toTitle(ilAd)}" için merkez ilçe otomatik seçilemedi, "${loc.ilceAd}" ilçesinin vakitleri gösteriliyor. ` +
+        "Farklı bir ilçe istiyorsanız il listesinden tekrar seçim yapın.",
+        false
+      );
+    }
+  } catch (err) {
+    if (myToken !== ilChangeToken) return;
+    if (state.location && state.location.ilId) stateSelect.value = state.location.ilId;
+    else stateSelect.value = "";
+    updateIlCityDisplay();
+    setStatus("Vakit verisi alınamadı: " + (err.message || err), true);
+  }
+}
+
+let lastResumeAt = 0;
+let illerLoaded = true;
+async function retryIllerIfNeeded() {
+  if (illerLoaded) return;
+  illerLoaded = true;
+  const ok = await populateIller();
+  illerLoaded = ok;
+  if (!ok) return;
+  if (state.location && state.location.ilId) $("ilSel").value = state.location.ilId;
+  updateIlCityDisplay();
+  if (statusEl.textContent.startsWith("İl listesi alınamadı")) setStatus("");
+}
+function resumeRefresh() {
+  if (!illerLoaded) retryIllerIfNeeded();
+  if (!state.location || !state.location.ilceId) return;
+  const nowMs = Date.now();
+  if (nowMs - lastResumeAt < 2000) return;
+  lastResumeAt = nowMs;
+  const period = state.times ? findActivePeriod(state.times) : null;
+  if (!period || (state.stale && navigator.onLine !== false)) {
+    retryCount = 0;
+    loadAndRender();
+    return;
+  }
+  if (render(period)) startCountdown();
+}
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") resumeRefresh();
+});
+window.addEventListener("online", resumeRefresh);
+window.addEventListener("offline", () => {
+  if (!state.times) return;
+  state.stale = true;
+  setStatus("Çevrimdışı: ekrandaki vakitler son çekilen verilerdir. Bağlantı gelince yenilenir.", false);
+});
+window.addEventListener("pageshow", (e) => { if (e.persisted) resumeRefresh(); });
+
+(function () {
+  let startY = null, maxPull = 0, lastRefreshAt = 0;
+  const atTop = () => (window.scrollY || (document.scrollingElement && document.scrollingElement.scrollTop) || 0) <= 0;
+  window.addEventListener("touchstart", (e) => {
+    startY = (e.touches.length === 1 && atTop()) ? e.touches[0].clientY : null;
+    maxPull = 0;
+  }, { passive: true });
+  window.addEventListener("touchmove", (e) => {
+    if (startY === null || !e.touches.length) return;
+    if (!atTop()) { startY = null; return; }
+    maxPull = Math.max(maxPull, e.touches[0].clientY - startY);
+  }, { passive: true });
+  window.addEventListener("touchend", () => {
+    const pulled = startY !== null && maxPull >= 90;
+    startY = null; maxPull = 0;
+    if (!pulled || !state.location || !state.location.ilceId) return;
+    const now = Date.now();
+    if (now - lastRefreshAt < 1500) return;
+    lastRefreshAt = now;
+    retryCount = 0;
+    loadAndRender();
+  }, { passive: true });
+})();
+
+init();
+
+if ("serviceWorker" in navigator) {
+  const hadController = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener("controllerchange", () => { if (hadController) location.reload(); });
+  navigator.serviceWorker.register("sw.js", { updateViaCache: "none" })
+    .catch((err) => console.warn("[SW] Kayıt başarısız:", err));
+}
+if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+window.scrollTo(0, 0);
+(function () {
+  function fitTitle() {
+    var h = document.querySelector('header h1');
+    if (!h) return;
+    h.style.fontSize = '';
+    var fs = parseFloat(getComputedStyle(h).fontSize);
+    while (h.scrollWidth > h.clientWidth && fs > 10) {
+      fs -= 0.5;
+      h.style.fontSize = fs + 'px';
+    }
+  }
+  fitTitle();
+  window.addEventListener('resize', fitTitle);
+  window.addEventListener('load', fitTitle);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitTitle);
+})();
+</script>
+</body>
+</html>

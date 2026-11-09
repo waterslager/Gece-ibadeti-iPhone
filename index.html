@@ -212,17 +212,11 @@
   }
 
   .data-badge {
-
     display: flex; align-items: center; justify-content: center; gap: 8px;
-
     margin: 0 0 12px; padding: 6px 12px; border-radius: 999px;
-
     font-size: 0.78rem; color: var(--muted, #94a3b8);
-
     background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
-
   }
-
   .data-badge::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #22c55e; flex: none; }
 
   .data-badge.cache::before { background: #f59e0b; }
@@ -649,6 +643,7 @@ function saveTimesCache(ilceId, newTimes) {
   const map = new Map();
   if (old) old.times.forEach((t) => map.set(t.date.getTime(), t));
   newTimes.forEach((t) => { if (timeEntryValid(t)) map.set(t.date.getTime(), t); });
+  // Geçmişten yalnızca son 2 gün tutulur (gece yarısından sonra dünün akşam vakti gerekir); eskisi silinir.
   const cutoff = Date.now() - 2 * 86400000;
   const merged = [...map.values()].filter((t) => t.date.getTime() >= cutoff).sort((a, b) => a.date - b.date);
   if (!merged.length) return;
@@ -1188,7 +1183,7 @@ async function loadAndRender() {
 
     if (state.times && state.dataMode === "live") setDataMode("last", state.dataAt);
 
-    if (mySource === "imsakiyem") {
+    if (mySource === "imsakiyem" && !keepTimes) {
       try {
         const fallback = loadTimesCache(myLoc.ilceId);
         const fallbackPeriod = fallback ? findActivePeriod(fallback) : null;
@@ -1219,6 +1214,7 @@ async function loadAndRender() {
     } else {
       setStatus("Vakitler alınamadı: " + msg, true);
     }
+    if (keepTimes && isTransient) scheduleReload();
     setLoading(false);
   }
 }
@@ -1738,8 +1734,8 @@ if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("sw.js", { updateViaCache: "none" })
     .catch((err) => console.warn("[SW] Kayıt başarısız:", err));
 }
-  if ("scrollRestoration" in history) history.scrollRestoration = "manual";
-  window.scrollTo(0, 0);
+if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+window.scrollTo(0, 0);
 (function () {
   function fitTitle() {
     var h = document.querySelector('header h1');

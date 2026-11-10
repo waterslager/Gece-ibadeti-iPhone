@@ -288,7 +288,7 @@
     letter-spacing: 1px;
     margin-bottom: 2px;
   }
-  .secondary .item .tm {
+  .secondary .item .p-time {
     font-size: 12px;
     font-weight: 600;
     color: #ffffff;
@@ -547,12 +547,12 @@
         <div class="vtt-hijri" id="vakitTableHijri"></div>
       </div>
       <div class="secondary" id="otherTimes">
-        <div class="item"><div class="nm">İmsâk</div><div class="tm" data-key="imsak">--:--</div></div>
-        <div class="item"><div class="nm">Güneş</div><div class="tm" data-key="gunes">--:--</div></div>
-        <div class="item"><div class="nm">Öğle</div><div class="tm" data-key="ogle">--:--</div></div>
-        <div class="item"><div class="nm">İkindi</div><div class="tm" data-key="ikindi">--:--</div></div>
-        <div class="item"><div class="nm">Akşam</div><div class="tm" data-key="aksam">--:--</div></div>
-        <div class="item"><div class="nm">Yatsı</div><div class="tm" data-key="yatsi">--:--</div></div>
+        <div class="item"><div class="nm">İmsâk</div><div class="p-time" data-key="imsak">--:--</div></div>
+        <div class="item"><div class="nm">Güneş</div><div class="p-time" data-key="gunes">--:--</div></div>
+        <div class="item"><div class="nm">Öğle</div><div class="p-time" data-key="ogle">--:--</div></div>
+        <div class="item"><div class="nm">İkindi</div><div class="p-time" data-key="ikindi">--:--</div></div>
+        <div class="item"><div class="nm">Akşam</div><div class="p-time" data-key="aksam">--:--</div></div>
+        <div class="item"><div class="nm">Yatsı</div><div class="p-time" data-key="yatsi">--:--</div></div>
       </div>
     </div>
 
@@ -1356,7 +1356,7 @@ function highlightCurrentVakit(info) {
   const key = info ? info.key : null;
   if (key === lastHighlightKey) return;
   lastHighlightKey = key;
-  document.querySelectorAll("#otherTimes .tm").forEach((el) => {
+  document.querySelectorAll("#otherTimes .p-time").forEach((el) => {
     if (el.parentElement) el.parentElement.classList.toggle("is-current", el.dataset.key === key);
   });
 }
@@ -1367,7 +1367,7 @@ function refreshVakitList(force) {
   const dateKey = day.date.getTime();
   if (force || dateKey !== lastGridDateKey) {
     lastGridDateKey = dateKey;
-    document.querySelectorAll("#otherTimes .tm").forEach((el) => {
+    document.querySelectorAll("#otherTimes .p-time").forEach((el) => {
       el.textContent = day[el.dataset.key] || "--:--";
     });
     const titleEl = document.getElementById("vakitTableTitle");

@@ -1164,6 +1164,10 @@ async function loadAndRender() {
         saveTimesCache(myLoc.ilceId, times);
         extendTimesCache(myLoc.ilceId).catch(() => {});
       }
+    } else {
+      // Vakit verisi eksik geldi: yarım veriyle sayaçsız kalmasın, bir sonraki açılışta yeniden çekilsin
+      resetTimes();
+      highlightCurrentVakit(null);
     }
   } catch (e) {
     if (myRequestId !== state.requestId) return;

@@ -1,4 +1,4 @@
-const CACHE = "teheccud-v26";
+const CACHE = "teheccud-v25";
 const ASSETS = [
   "./",
   "./index.html",
@@ -40,36 +40,14 @@ self.addEventListener("fetch", (e) => {
   const url = new URL(e.request.url);
   if (url.origin !== self.location.origin) return;
 
-  const isPage = e.request.mode === "navigate" || e.request.destination === "document";
-  e.respondWith(isPage ? networkFirst(e) : staleWhileRevalidate(e));
+  e.respondWith(staleWhileRevalidate(e));
 });
 
-// Sayfalar (HTML): önce ağdan, yani her açılışta güncel sürüm gelir. NAV_TIMEOUT_MS içinde cevap gelmezse ya da
-// çevrimdışıysa önbellekteki son sürüm gösterilir; yavaş indirme arkada bitip önbelleği tazeler.
-// no-cache: tarayıcının HTTP önbelleği (GitHub Pages ~10 dk) yerine sunucuya koşullu istek atar.
-const NAV_TIMEOUT_MS = 2500;
-
-function networkFirst(event) {
-  const request = event.request;
-  return caches.open(CACHE).then((cache) => {
-    const fresh = fetch(request.url, { cache: "no-cache" })
-      .then((res) => {
-        if (res && res.ok) cache.put(request, res.clone()).catch(() => {});
-        return res;
-      })
-      .catch(() => null);
-    try { event.waitUntil(fresh); } catch (_) { /* zaten bitmiş olabilir */ }
-    const timeout = new Promise((resolve) => setTimeout(() => resolve(null), NAV_TIMEOUT_MS));
-    return Promise.race([fresh, timeout])
-      .then((res) => (res && res.ok ? res : cache.match(request, { ignoreSearch: true }).then((c) => c || cache.match("./index.html"))))
-      .then((res) => res || new Response(
-        "Çevrimdışısınız ve bu sayfa önbellekte yok.",
-        { status: 503, statusText: "Offline", headers: { "Content-Type": "text/plain; charset=utf-8" } }
-      ));
-  });
-}
-
-// Diğer dosyalar (ikonlar, manifest): önbellekten anında, güncelleme arkadan sessizce indirilip önbelleğe yazılır.
+// Uygulama kabuğu (HTML/CSS/JS/ikonlar) her zaman önbellekten, ağdan
+// bağımsız ve gecikmesiz olarak sunulur — bir "zaman aşımı" kavramı ve
+// buna bağlı yanlış "çevrimdışı" hatası artık söz konusu değil.
+// Güncelleme arka planda sessizce indirilip önbelleğe yazılır; kullanıcı
+// bunu beklemez. Yeni service worker devreye girince sayfa kendini yeniler.
 function staleWhileRevalidate(event) {
   const request = event.request;
   return caches.open(CACHE).then((cache) =>

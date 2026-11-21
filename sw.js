@@ -1,27 +1,17 @@
-const CACHE = "teheccud-v25";
-const ASSETS = [
-  "./",
-  "./index.html",
-  "./manifest.json",
-  "./192.png",
-  "./512.png",
-  "./maskable-192.png",
-  "./maskable-512.png"
-];
+const CACHE = "teheccud-v27";
+const SHELL = ["./", "./index.html"];
+const ASSETS = [...SHELL, "./manifest.json", "./192.png", "./512.png", "./maskable-192.png", "./maskable-512.png"];
+
+const putFresh = (cache, url) =>
+  fetch(url, { cache: "reload" })
+    .then((res) => (res && res.ok ? cache.put(url, res) : null))
+    .catch(() => {}); // tek bir dosya başarısız olursa diğerleri etkilenmesin
 
 self.addEventListener("install", (e) => {
   e.waitUntil(
-    caches.open(CACHE).then((cache) =>
-      Promise.all(
-        ASSETS.map((url) =>
-          fetch(url, { cache: "reload" })
-            .then((res) => {
-              if (res && res.ok) return cache.put(url, res.clone()).catch(() => {});
-            })
-            .catch(() => {}) // tek bir asset başarısız olursa kurulumun tamamını bloklamasın
-        )
-      )
-    ).then(() => self.skipWaiting())
+    caches.open(CACHE)
+      .then((cache) => Promise.all(ASSETS.map((url) => putFresh(cache, url))))
+      .then(() => self.skipWaiting())
   );
 });
 
@@ -35,43 +25,56 @@ self.addEventListener("activate", (e) => {
 
 self.addEventListener("fetch", (e) => {
   if (e.request.method !== "GET") return;
-  // Namaz vakti API'si (farklı origin) service worker'ın hiç kapsamına girmesin;
-  // tarayıcı bu isteği normal şekilde, SW araya girmeden yürütsün.
-  const url = new URL(e.request.url);
-  if (url.origin !== self.location.origin) return;
-
+  // Farklı origin (namaz vakti API'leri) service worker'a hiç girmez.
+  if (new URL(e.request.url).origin !== self.location.origin) return;
   e.respondWith(staleWhileRevalidate(e));
 });
 
-// Uygulama kabuğu (HTML/CSS/JS/ikonlar) her zaman önbellekten, ağdan
-// bağımsız ve gecikmesiz olarak sunulur — bir "zaman aşımı" kavramı ve
-// buna bağlı yanlış "çevrimdışı" hatası artık söz konusu değil.
-// Güncelleme arka planda sessizce indirilip önbelleğe yazılır; kullanıcı
-// bunu beklemez. Yeni service worker devreye girince sayfa kendini yeniler.
+const isShell = (request) => request.mode === "navigate" || /\.html$/.test(new URL(request.url).pathname);
+
+async function differs(a, b) {
+  const [x, y] = (await Promise.all([a.arrayBuffer(), b.arrayBuffer()])).map((buf) => new Uint8Array(buf));
+  return x.length !== y.length || x.some((v, i) => v !== y[i]);
+}
+
+// Kabuk (index.html) yenilenince açık sayfalara mesaj gider.
+let shellUpdate = null;
+function updateShell(cache) {
+  if (!shellUpdate) {
+    shellUpdate = Promise.all(SHELL.map((url) => putFresh(cache, url)))
+      .then(() => self.clients.matchAll({ type: "window" }))
+      .then((clients) => clients.forEach((c) => c.postMessage("updated")))
+      .finally(() => { shellUpdate = null; });
+  }
+  return shellUpdate;
+}
+
+// Kabuk önbellekten gecikmesiz sunulur; arka planda sunucuyla karşılaştırılır. Değişiklik varsa
+// yeni sürüm indirilir ve sayfa hemen yenilenir, yani yeni sürüm ilk açılışta devreye girer.
 function staleWhileRevalidate(event) {
   const request = event.request;
   return caches.open(CACHE).then((cache) =>
     cache.match(request, { ignoreSearch: true }).then((cached) => {
-      // no-cache: tarayıcının HTTP önbelleği (GitHub Pages ~10 dk) yerine sunucuya
-      // koşullu istek atar; güncelleme 10 dk gecikmeden gelir.
+      const before = cached && isShell(request) ? cached.clone() : null; // gövde tüketilmeden önce kopyalanmalı
+      // no-cache: HTTP önbelleği yerine sunucuya koşullu istek atar (GitHub Pages ~10 dk gecikmesi olmaz).
       const networkUpdate = fetch(request.url, { cache: "no-cache" })
-        .then((res) => {
-          if (res && res.ok) cache.put(request, res.clone()).catch(() => {});
+        .then(async (res) => {
+          if (res && res.ok) {
+            const changed = before && await differs(before, res.clone());
+            cache.put(request, res.clone()).catch(() => {});
+            if (changed) await updateShell(cache);
+          }
           return res;
         })
         .catch(() => null);
 
       if (cached) {
-        // Güncelleme bitene kadar service worker'ın kapanmaması için waitUntil.
-        // respondWith promise'i hâlâ beklemede olduğundan çağrı geçerlidir; yine de
-        // bazı tarayıcılarda InvalidStateError ihtimaline karşı try/catch'e alındı.
-        // networkUpdate zaten .catch(() => null) ile bittiğinden unhandled rejection yok.
-        try { event.waitUntil(networkUpdate); } catch (_) { networkUpdate.catch(() => {}); }
+        // SW güncelleme bitene kadar kapanmasın; bazı tarayıcılarda InvalidStateError ihtimaline karşı try/catch.
+        try { event.waitUntil(networkUpdate); } catch (_) {}
         return cached;
       }
 
-      // İlk ziyaret / önbellek boş: ağı bekle. Başarısız olursa sadece sayfa
-      // açılışlarında index.html'e düş (resim gibi dosyalara HTML dönmesin).
+      // Önbellek boş: ağı bekle; başarısızsa yalnızca sayfa açılışlarında index.html'e düş.
       return networkUpdate
         .then((res) => res || (request.mode === "navigate" ? cache.match("./index.html") : null))
         .then((res) => res || new Response(

@@ -2,6 +2,7 @@
   "name": "قِيَامُ اللَّيْلِ",
   "short_name": "قِيَامُ اللَّيْلِ",
   "description": "Diyanet İşleri Başkanlığı verilerine dayalı Teheccüd, Seher ve Sabah Namazı vakitleri.",
+  "id": "./index.html",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

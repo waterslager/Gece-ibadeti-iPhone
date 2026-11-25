@@ -244,6 +244,10 @@
   }
   .footer .org { color: #fde047; font-weight: 500; }
   .footer .src { color: #64b5f6; font-weight: 700; }
+  .footer .src-line { white-space: nowrap; overflow: hidden; }
+  .footer.wrap .src-line { white-space: normal; }
+  .footer .src-loc { margin-top: 3px; }
+  .footer .loc-val { color: #00e676; font-weight: 700; }
 
   .vakit-table-card {
     background: #16224a;
@@ -436,9 +440,9 @@
     </div>
 
     <div class="il-card src-card">
-      <span class="il-label">Veri kaynağı seç</span>
+      <span class="il-label">Veri Kaynağı seç</span>
       <span class="il-city" id="srcDisplay" aria-live="polite">ezanvakti.imsakiyem.com</span>
-      <select id="sourceSel" aria-label="Veri kaynağı seçimi">
+      <select id="sourceSel" aria-label="Veri Kaynağı seçimi">
         <option value="imsakiyem" selected>ezanvakti.imsakiyem.com</option>
         <option value="emushaf">mushaf (ezanvakti.emushaf.net)</option>
         <option value="aladhan">api.aladhan.com</option>
@@ -450,7 +454,7 @@
       <div class="hijri" id="hijriLabel"></div>
     </div>
 
-    <div class="next-bar" id="nextBar">
+    <div class="next-bar">
       <span class="next-info"><span id="nextName">—</span> <span id="nextTime">--:--</span><span id="nextRaw"></span></span>
       <span class="next-remain">Kalan Süre: <span id="nextRemain" role="timer" aria-live="off">--:--:--</span></span>
     </div>
@@ -497,7 +501,7 @@
         </div>
       </div>
       <div class="cami-block">
-        <div class="cami-content">
+        <div>
           <div class="cami-label">Camide Farz Namazı Vakti</div>
           <div class="cami-time" id="camiTime">--:--</div>
           <button type="button" class="cami-opt" data-mode="gunes" aria-pressed="true"><span class="cami-chk"></span>(Güneşten 30 dk önce)</button>
@@ -553,10 +557,10 @@
 
     <div class="status hidden" id="status" role="status" aria-live="polite"></div>
 
-    <footer class="footer">
-      Veri kaynağı: <span class="org" id="srcNote">Diyanet İşleri Başkanlığı</span><br>
-      (<span class="src" id="srcDomain">ezanvakti.imsakiyem.com</span>).<br>
-      Her açılışta otomatik güncellenir.
+    <footer class="footer" id="sourceNote">
+      <div class="src-line">Veri Kaynağı: <span class="org" id="srcNote">Diyanet İşleri Başkanlığı</span> (<span class="src" id="srcDomain">ezanvakti.imsakiyem.com</span>).</div>
+      <div class="src-line">Her açılışta otomatik güncellenir.</div>
+      <div class="src-line src-loc" id="srcLoc" hidden></div>
     </footer>
   </div>
 
@@ -756,6 +760,8 @@ function combineSignals(signalA, signalB) {
   if (!(signalB instanceof AbortSignal)) signalB = null;
   if (!signalA) return signalB;
   if (!signalB) return signalA;
+  // Yeni tarayıcılarda dinleyici bırakmayan yerleşik yol; eskilerde aşağıdaki yedek çalışır.
+  if (typeof AbortSignal.any === "function") return AbortSignal.any([signalA, signalB]);
   if (signalA.aborted || signalB.aborted) {
     const c = new AbortController();
     c.abort();
@@ -1159,8 +1165,7 @@ async function loadAndRender() {
     const msg = String((e && e.message) || e);
     const isTransient = /Ağ hatası|zaman aşımı|Failed to fetch|API hatası: (?:5\d\d|429|408)|geçersiz yanıt/i.test(msg);
 
-    // Ekrandaki vakitler aynı il ve kaynağa aitse geçerlidir: geri sayım durmadan devam eder
-    // (önceden yalnız "Kayıtlı veri"de devam ediyordu; internet gidince "Kalan Süre" donuyordu).
+    // Ekrandaki vakitler aynı il ve kaynağa aitse geçerlidir: bağlantı kopsa da geri sayım durmadan devam eder.
     const keepTimes = !!state.times && state.timesIlceId === myLoc.ilceId && state.timesSource === mySource;
     if (!keepTimes) {
       resetTimes();
@@ -1223,7 +1228,7 @@ function clearDisplay() {
   const setT = (id, t) => { $(id).textContent = t; };
   TIME_IDS.forEach((id) => setT(id, "--:--"));
   document.querySelectorAll("[data-key]").forEach((el) => { el.textContent = "--:--"; });
-  setT("dateLabel", "-"); setT("hijriLabel", "");
+  setT("dateLabel", "—"); setT("hijriLabel", "");
   lastGridDateKey = null;
   refreshDuhaKerahat();
   setT("nextName", "—"); setT("nextTime", "--:--"); setT("nextRaw", ""); setT("nextRemain", "--:--:--");
@@ -1498,6 +1503,40 @@ async function init() {
   await activateSource(SOURCE_INFO[s0] ? s0 : "imsakiyem", true);
 }
 
+// Konum satırı: "Konum: İstanbul (Merkez)"; AlAdhan yalnız il ile çalıştığı için orada sadece il yazılır.
+function setLocation(loc) {
+  state.location = loc;
+  const el = $("srcLoc");
+  let text = "";
+  if (loc && loc.ilAd) {
+    text = toTitle(loc.ilAd);
+    if (source !== "aladhan" && loc.ilceAd) text += sameIl(loc.ilceAd, loc.ilAd) ? " (Merkez)" : " (" + toTitle(loc.ilceAd) + ")";
+  }
+  el.textContent = "";
+  el.hidden = !text;
+  if (text) {
+    const val = document.createElement("span");
+    val.className = "loc-val";
+    val.textContent = text;
+    el.append("Konum: ", val);
+  }
+  fitSourceNote();
+}
+
+// Alt bilgi satırları tek satıra sığacak en büyük ortak yazı boyutuna küçültülür; en küçük boyutta da sığmazsa satır kırılır.
+function fitSourceNote() {
+  const box = $("sourceNote");
+  if (!box) return;
+  box.classList.remove("wrap");
+  box.style.fontSize = "";
+  if (!box.clientWidth) return;
+  const lines = Array.from(box.querySelectorAll(".src-line:not([hidden])"));
+  const over = () => lines.some((l) => l.scrollWidth > l.clientWidth + 0.5);
+  let size = parseFloat(getComputedStyle(box).fontSize);
+  while (over() && size > 7) { size -= 0.25; box.style.fontSize = size + "px"; }
+  if (over()) box.classList.add("wrap");
+}
+
 function updateSourceUI() {
   const info = SOURCE_INFO[source] || SOURCE_INFO.imsakiyem;
   sourceSelect.value = source;
@@ -1507,11 +1546,12 @@ function updateSourceUI() {
   const dom = $("srcDomain");
   if (note) note.textContent = info.note;
   if (dom) dom.textContent = info.domain;
+  fitSourceNote();
 }
 
 let sourceToken = 0;
-const SESSION_SRC_KEY = "kiyamul-leyl.session.source";
-const SESSION_IL_KEY = "kiyamul-leyl.session.il";
+const SESSION_SRC_KEY = "teheccud-seher.session.source";
+const SESSION_IL_KEY = "teheccud-seher.session.il";
 let lastIlAd = null;
 function rememberIl(ilAd) {
   if (!ilAd) return;
@@ -1532,7 +1572,7 @@ async function activateSource(newSrc, initial) {
   if (state.abortController) { state.abortController.abort(); state.abortController = null; }
   ilChangeToken++;
   if (!initial) {
-    state.location = null;
+    setLocation(null);
     resetTimes();
     setStatus("");
   }
@@ -1561,14 +1601,14 @@ async function activateSource(newSrc, initial) {
   }
 
   if (!loc) {
-    state.location = null;
+    setLocation(null);
     updateIlCityDisplay();
     setStatus(initial ? "İl seçerek başlayın. Bu seçim hatırlanacaktır." : "Bu kaynak için il seçin.");
     listPromise.then((ok) => { if (myToken === sourceToken) illerLoaded = ok; });
     return;
   }
 
-  state.location = loc;
+  setLocation(loc);
   rememberIl(loc.ilAd);
   if (loc.ilAd) ilCityDisplay.textContent = toTitle(loc.ilAd);
   listPromise.then((ok) => {
@@ -1579,7 +1619,7 @@ async function activateSource(newSrc, initial) {
     if (stateSelect.value !== state.location.ilId) {
       state.requestId++;
       if (state.abortController) { state.abortController.abort(); state.abortController = null; }
-      state.location = null;
+      setLocation(null);
       resetTimes();
       updateIlCityDisplay();
       setStatus("Kayıtlı şehriniz artık bulunamadı, lütfen tekrar seçin.", true);
@@ -1615,7 +1655,7 @@ async function selectIl(ilId, ilAd) {
       const ilce = mySource === "emushaf" ? await getIlMerkezEmushaf(ilId, ilAd) : await getIlAdindakiIlce(ilId, ilAd);
       if (myToken !== ilChangeToken || mySource !== source) return;
       if (!ilce) {
-        state.location = null;
+        setLocation(null);
         resetTimes();
         setStatus("Bu il için veri bulunamadı.", true);
         return;
@@ -1624,7 +1664,7 @@ async function selectIl(ilId, ilAd) {
       loc = { ilId, ilAd, ilceId: ilce.IlceID, ilceAd: ilce.IlceAdi };
     }
     if (myToken !== ilChangeToken || mySource !== source) return;
-    state.location = loc;
+    setLocation(loc);
     if (mySource === "imsakiyem") saveLocation(loc);
     retryCount = 0;
     await loadAndRender();
@@ -1737,10 +1777,11 @@ window.scrollTo(0, 0);
     const over = h.scrollWidth / h.clientWidth;
     if (over > 1) h.style.fontSize = Math.max(10, Math.floor(parseFloat(getComputedStyle(h).fontSize) / over * 2) / 2) + "px";
   }
-  fitTitle();
-  window.addEventListener("resize", fitTitle);
-  window.addEventListener("load", fitTitle);
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitTitle);
+  const fitAll = () => { fitTitle(); fitSourceNote(); };
+  fitAll();
+  window.addEventListener("resize", fitAll);
+  window.addEventListener("load", fitAll);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitAll);
 })();
 </script>
 </body>
